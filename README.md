@@ -81,27 +81,12 @@ Tras cada rating, el sistema construye la matriz A ∈ ℝ^(usuarios × cancione
 **7. Panel de administración**
 Los usuarios con rol `ADMIN` pueden listar todos los usuarios (paginados) y desactivar cuentas.
 
-### Tecnologías Utilizadas
-
-| Capa | Tecnología |
-|---|---|
-| Framework | Spring Boot 3.2.5, Java 21 |
-| Base de datos | PostgreSQL 15 |
-| Seguridad | Spring Security, JWT (jjwt 0.12.5), BCrypt |
-| Algoritmo SVD | Apache Commons Math 3.6.1 |
-| Mapeo | MapStruct 1.5.5 |
-| Email | Spring Mail + Thymeleaf (Resend SMTP) |
-| API externa | Spotify Web API (Client Credentials Flow) |
-| Testing | JUnit 5, Mockito, TestContainers (PostgreSQL) |
-| Build | Maven |
-| Contenedores | Docker, Docker Compose |
-| Deployment | AWS ECS Fargate + RDS PostgreSQL + ECR |
+**8. Conversaciones y chat en tiempo real**
+Se añadió soporte para crear conversaciones y enviar mensajes en tiempo real entre usuarios cercanos en el espacio latente. Cuando el sistema detecta un "gemelo musical" para un usuario, puede sugerir iniciar una conversación o crear automáticamente una `Conversation` entre ambos. El chat usa WebSockets (STOMP) para mensajes en tiempo real: `ChatController` expone endpoints REST y `WebSocketConfig` configura la comunicación en tiempo real. Las entidades `Conversation` y `Message` persisten historiales y permiten listar conversaciones y mensajes por usuario.
 
 ---
 
 ## Modelo de Entidades
-
-### Diagrama Entidad-Relación
 
 ```
 ┌──────────┐         ┌──────────┐         ┌──────────┐
@@ -136,19 +121,35 @@ Los usuarios con rol `ADMIN` pueden listar todos los usuarios (paginados) y desa
 │ basedOnUserId│
 │ createdAt    │
 └──────────────┘
+     
+     
+    Additional entities for real-time chat:
+
+┌──────────┐     N     N   ┌──────────────┐     1     N   ┌────────┐
+│  User    │───────────────│ Conversation │───────────────│ Message│
+│──────────│               │──────────────│               │────────│
+│ id       │               │ id           │               │ id     │
+│ name     │               │ title        │               │ text   │
+│ ...      │               │ createdAt    │               │ sender │
+└──────────┘               │ lastMessageAt│               │ sentAt │
+                           └──────────────┘               └────────┘
+
+(La relación `User` ⇄ `Conversation` es N:M — una conversación puede tener varios participantes y un usuario puede estar en varias conversaciones. `Message` pertenece a una `Conversation` y referencia al `sender`.)
 ```
 
 ### Descripción de Entidades
 
 | Entidad | Descripción | Relaciones clave |
 |---|---|---|
-| `User` | Usuario registrado con credenciales y rol | 1:N con Rating, 1:1 con LatentProfile, 1:N con Recommendation |
+| `User` | Usuario registrado con credenciales y rol | 1:N con Rating, 1:1 con LatentProfile, 1:N con Recommendation, N:M con Conversation |
 | `Song` | Canción con metadatos de Spotify y audio features | N:M con User vía Rating, N:M con Genre |
 | `Rating` | Calificación 1–5 de un usuario a una canción (tabla pivote) | N:1 con User, N:1 con Song |
 | `Artist` | Artista musical de una canción | 1:N con Song |
 | `Genre` | Género musical | N:M con Song vía song_genres |
 | `LatentProfile` | Coordenadas SVD [x,y,z] del usuario en espacio latente | 1:1 con User |
 | `Recommendation` | Canciones sugeridas basadas en el gemelo musical | N:1 con User, N:M con Song |
+| `Conversation` | Agrupación de participantes para chat en tiempo real; guarda metadatos (título, último mensaje) | N:M con User, 1:N con Message |
+| `Message` | Mensaje enviado dentro de una `Conversation` (texto, remitente y timestamp) | N:1 con Conversation, N:1 con User (sender) |
 
 ---
 
@@ -163,7 +164,7 @@ Se testean los tres repositorios principales: `UserRepository`, `SongRepository`
 Tests unitarios para `AuthService`, `RatingService` y `RecommendationService`. Las dependencias (repositorios, JwtService, PasswordEncoder, EventPublisher) son mockeadas con `@MockBean` y `@Mock`. Se prueban flujos felices, manejo de excepciones (`DuplicateResourceException`, `ResourceNotFoundException`, `UnauthorizedException`) y publicación de eventos.
 
 **Tests de Controlador (`@WebMvcTest` con MockMvc)**
-Tests de integración para los 5 controladores: `AuthController`, `RatingController`, `RecommendationController`, `SongController` y `UserController`. Se verifican status codes HTTP, cuerpos de respuesta JSON, headers de autorización y comportamiento con requests inválidos.
+Tests de integración para los 6 controladores: `AuthController`, `RatingController`, `RecommendationController`, `SongController`, `UserController` y `ChatController`. Se verifican status codes HTTP, cuerpos de respuesta JSON, headers de autorización y comportamiento con requests inválidos. También existen pruebas que cubren el comportamiento de endpoints relacionados con conversaciones y mensajes.
 
 **Tests de Integración (TestContainers + PostgreSQL real)**
 Tres clases en el paquete `integration` usan `@Testcontainers` con un contenedor `postgres:15-alpine` real para verificar comportamiento real de la base de datos: constraints de unicidad a nivel DB, queries con JOINs complejos y ordenamiento.
@@ -238,11 +239,16 @@ Se publica en `AuthService.register()` inmediatamente después de persistir el n
 **`RatingSubmittedEvent`**
 Se publica en `RatingService.rate()` después de guardar el rating. El listener usa `@TransactionalEventListener(phase = AFTER_COMMIT)` para garantizar que el SVD se recalcula solo si la transacción del rating fue exitosa. Si la transacción hace rollback, el SVD no se dispara innecesariamente.
 
+**Eventos relacionados con conversación/chat**
+Al crear una `Conversation` o enviar un `Message`, el sistema publica eventos internos que permiten notificar a componentes interesados (por ejemplo: métricas, historial o envío de notificaciones push). El envío de mensajes en tiempo real se realiza vía WebSocket y no bloquea la respuesta REST.
+
 ### Por qué deben ser asíncronos
 
 **Correo electrónico:** El envío de un email puede tardar entre 200ms y 2 segundos dependiendo del servidor SMTP. Si fuera síncrono, el endpoint `POST /auth/register` tardaría ese tiempo en responder, degradando la experiencia. Con `@Async`, el registro responde en ~5ms y el email se envía en background.
 
 **Recálculo SVD:** Construir la matriz de ratings, factorizarla y actualizar todos los `LatentProfile` puede tardar entre 50ms y 500ms según el número de usuarios. Si fuera síncrono en `POST /ratings`, el usuario esperaría ese tiempo por cada calificación. Con `@Async` y `@TransactionalEventListener(AFTER_COMMIT)`, el rating se guarda en ~2ms y el SVD se ejecuta en el `ThreadPoolTaskExecutor` configurado con 5 threads base y máximo 20.
+
+**Mensajería en tiempo real:** El manejo de mensajes se realiza a través de WebSocket; la persistencia de `Message` se hace de forma rápida y, si se requieren tareas adicionales (notificaciones push, indexación), se delegan a procesos asíncronos.
 
 ---
 
@@ -277,7 +283,7 @@ Cada feature branch se mergea a `develop` vía Pull Request con al menos 1 aprob
 
 ### Logros del Proyecto
 
-MusicMatch demuestra que es posible integrar matemática aplicada (SVD) dentro de una arquitectura Spring Boot profesional sin sacrificar la calidad del código. El sistema recomienda música real usando la Spotify API, protege todos los endpoints con JWT, maneja errores de forma consistente y está cubierto por tests en tres niveles incluyendo TestContainers contra PostgreSQL real.
+MusicMatch demuestra que es posible integrar matemática aplicada (SVD) dentro de una arquitectura Spring Boot profesional sin sacrificar la calidad del código. El sistema recomienda música real usando la Spotify API, protege todos los endpoints con JWT, maneja errores de forma consistente y está cubierto por tests en tres niveles incluyendo TestContainers contra PostgreSQL real. Además, se añadió soporte de conversaciones y mensajería en tiempo real para facilitar la interacción entre usuarios compatibles.
 
 ### Aprendizajes Clave
 
@@ -293,6 +299,7 @@ MusicMatch demuestra que es posible integrar matemática aplicada (SVD) dentro d
 - **CI/CD con GitHub Actions:** pipeline automático de build + test + push a ECR en cada merge a main.
 - **Paginación en todos los endpoints de listado.**
 - **Upload de foto de perfil a AWS S3.**
+- **Mejoras en chat:** soporte para conversaciones grupales ricas, mensajes multimedia y notificaciones push.
 
 ---
 
