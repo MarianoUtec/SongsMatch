@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f0f1a; color: #fff; margin: 0; padding: 0; }
+    .container { max-width: 560px; margin: 40px auto; background: #1a1a2e; border-radius: 12px; padding: 40px; }
+    h1 { color: #a855f7; font-size: 28px; margin-bottom: 8px; }
+    p { color: #c4b5fd; line-height: 1.6; }
+    .cta { display: inline-block; background: #7c3aed; color: #fff; padding: 12px 28px;
+           border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to MusicMatch 🎵</h1>
+    <p>Hey <strong th:text="${name}">User</strong>,</p>
+    <p>Your account is ready. Start rating songs and discover users with your same taste in music.
+       The more you rate, the better your recommendations get.</p>
+    <a href="http://localhost:5173" class="cta">Start Rating Songs →</a>
+    <div class="footer">
+      <p>MusicMatch — Powered by Linear Algebra &amp; SVD</p>
+    </div>
+  </div>
+</body>
+</html>

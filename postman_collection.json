@@ -1,0 +1,916 @@
+{
+  "info": {
+    "name": "MusicMatch API",
+    "description": "Complete API collection for MusicMatch — a music recommendation backend using SVD (Singular Value Decomposition). Rate songs, discover your musical twin, and get personalized recommendations.\n\n## Setup\n1. Set `baseUrl` variable to your server (default: http://localhost:8080)\n2. Register a user via POST /auth/register\n3. Copy the `accessToken` from the response into the collection variable\n4. All protected endpoints will use it automatically via Bearer auth\n\n## Flow\nRegister → Rate 10 songs → GET /recommendations/me → See your musical twin",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Registration, login and token refresh endpoints. These are public — no JWT required.",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "  pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                  "  pm.test('Returns accessToken', () => pm.expect(json.accessToken).to.be.a('string'));",
+                  "  pm.test('Returns refreshToken', () => pm.expect(json.refreshToken).to.be.a('string'));",
+                  "  pm.test('User has correct email', () => pm.expect(json.user.email).to.eql(pm.request.body.raw ? JSON.parse(pm.request.body.raw).email : ''));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Ramirez\",\n  \"email\": \"alice@musicmatch.com\",\n  \"password\": \"Password1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates a new user account. Validates email uniqueness and password strength (uppercase + lowercase + digit required). Returns JWT access token (24h) and refresh token (7d). The test script automatically saves the tokens to collection variables."
+          },
+          "response": [
+            {
+              "name": "201 Created — Success",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"tokenType\": \"Bearer\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Alice Ramirez\",\n    \"email\": \"alice@musicmatch.com\",\n    \"role\": \"USER\",\n    \"isActive\": true,\n    \"createdAt\": \"2026-05-20T15:00:00\"\n  }\n}"
+            },
+            {
+              "name": "409 Conflict — Email already exists",
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\n  \"timestamp\": \"2026-05-20T15:00:00\",\n  \"status\": 409,\n  \"error\": \"Conflict\",\n  \"message\": \"Email already registered: alice@musicmatch.com\",\n  \"path\": \"/api/v1/auth/register\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Weak password",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"timestamp\": \"2026-05-20T15:00:00\",\n  \"status\": 400,\n  \"error\": \"Validation Failed\",\n  \"fields\": {\n    \"password\": \"Password must have uppercase, lowercase and number\"\n  },\n  \"path\": \"/api/v1/auth/register\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "  pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "  pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@musicmatch.com\",\n  \"password\": \"Password1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates an existing user. Returns JWT tokens. The test script saves them to collection variables automatically."
+          },
+          "response": [
+            {
+              "name": "200 OK — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"tokenType\": \"Bearer\",\n  \"user\": { \"id\": 1, \"name\": \"Alice Ramirez\", \"email\": \"alice@musicmatch.com\", \"role\": \"USER\" }\n}"
+            },
+            {
+              "name": "401 Unauthorized — Wrong credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"timestamp\": \"2026-05-20T15:00:00\",\n  \"status\": 401,\n  \"error\": \"Unauthorized\",\n  \"message\": \"Invalid email or password\",\n  \"path\": \"/api/v1/auth/login\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh?refreshToken={{refreshToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ],
+              "query": [
+                {
+                  "key": "refreshToken",
+                  "value": "{{refreshToken}}"
+                }
+              ]
+            },
+            "description": "Issues a new access token using the refresh token (valid 7 days). Use this when the access token (24h) expires without requiring the user to log in again."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Songs",
+      "description": "Song catalog endpoints. GET endpoints are public. DELETE requires ADMIN role.",
+      "item": [
+        {
+          "name": "Get All Songs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "pm.test('Has 10 pre-loaded songs', () => pm.expect(pm.response.json().length).to.be.at.least(10));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/songs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "songs"
+              ]
+            },
+            "description": "Returns all songs in the catalog. Public endpoint — no auth needed. The DataInitializer pre-loads 10 curated songs on startup (Pyramids, Retrograde, PRIDE., etc.)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"title\": \"Pyramids\",\n    \"artist\": \"Frank Ocean\",\n    \"albumName\": \"channel ORANGE\",\n    \"spotifyId\": \"spotify:track:pyramids\",\n    \"coverUrl\": null,\n    \"danceability\": null,\n    \"energy\": null,\n    \"valence\": null\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Search Songs",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/songs/search?q=frank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "songs",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "frank"
+                }
+              ]
+            },
+            "description": "Case-insensitive search by title or artist. Returns matching songs from the local catalog."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Song by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/songs/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "songs",
+                "1"
+              ]
+            },
+            "description": "Returns a single song by its database ID. Returns 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unrated Songs (mine)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/songs/unrated",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "songs",
+                "unrated"
+              ]
+            },
+            "description": "Returns songs the authenticated user has not yet rated. Used by the frontend to show the rating screen."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Song (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/songs/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "songs",
+                "1"
+              ]
+            },
+            "description": "Removes a song from the catalog. Requires ADMIN role. Returns 204 No Content on success, 403 Forbidden for non-admin users."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "description": "Rating endpoints — requires authentication. Submitting a rating triggers async SVD recomputation.",
+      "item": [
+        {
+          "name": "Rate a Song",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has rating id', () => pm.expect(json.id).to.be.a('number'));",
+                  "pm.test('Score is between 1-5', () => pm.expect(json.score).to.be.within(1, 5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"songId\": 1,\n  \"score\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ratings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ratings"
+              ]
+            },
+            "description": "Rates a song (1–5). If the user already rated this song, updates the score. After saving, publishes RatingSubmittedEvent which triggers async SVD recomputation in the background. Returns 201 Created with the rating details."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"userId\": 1,\n  \"song\": {\n    \"id\": 1,\n    \"title\": \"Pyramids\",\n    \"artist\": \"Frank Ocean\"\n  },\n  \"score\": 5,\n  \"createdAt\": \"2026-05-20T15:00:00\",\n  \"updatedAt\": \"2026-05-20T15:00:00\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Invalid score",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"timestamp\": \"2026-05-20T15:00:00\",\n  \"status\": 400,\n  \"error\": \"Validation Failed\",\n  \"fields\": { \"score\": \"must be between 1 and 5\" },\n  \"path\": \"/api/v1/ratings\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Ratings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ratings/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ratings",
+                "me"
+              ]
+            },
+            "description": "Returns all ratings submitted by the authenticated user, ordered by creation date. Used by the frontend to show rating history."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Rating",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ratings/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ratings",
+                "1"
+              ]
+            },
+            "description": "Deletes a rating by ID. Returns 204 No Content. Returns 404 if the rating does not exist."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Recommendations & Latent Space",
+      "description": "SVD-powered recommendation and visualization endpoints.",
+      "item": [
+        {
+          "name": "Get My Recommendations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has songs array', () => pm.expect(json.songs).to.be.an('array'));",
+                  "pm.test('Has basedOnUserId', () => pm.expect(json.basedOnUserId).to.be.a('number'));",
+                  "pm.test('Has basedOnUserName', () => pm.expect(json.basedOnUserName).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/recommendations/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "recommendations",
+                "me"
+              ]
+            },
+            "description": "Returns the 2 most recent song recommendations for the authenticated user, along with the name and ID of their musical twin (the user with most similar SVD latent profile). Requires at least 2 users with ratings in the system. Returns 404 if no recommendations have been computed yet."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"userId\": 1,\n  \"songs\": [\n    { \"id\": 3, \"title\": \"Retrograde\", \"artist\": \"James Blake\" },\n    { \"id\": 7, \"title\": \"Cómo Me Quieres\", \"artist\": \"Kevin Kaarl\" }\n  ],\n  \"basedOnUserId\": 2,\n  \"basedOnUserName\": \"Bob Torres\",\n  \"createdAt\": \"2026-05-20T15:05:00\"\n}"
+            },
+            {
+              "name": "404 Not Found — No recommendations yet",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"No recommendations yet. Rate at least 5 songs to get started!\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Latent Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/latent-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "latent-profile"
+              ]
+            },
+            "description": "Returns the SVD latent coordinates [coordX, coordY, coordZ] of the authenticated user after the most recent recomputation. Also includes the ID and compatibility percentage of their closest user. These coordinates feed the 3D scatter plot in the frontend."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"userId\": 1,\n  \"coordX\": -0.45,\n  \"coordY\": 0.03,\n  \"coordZ\": -0.34,\n  \"closestUserId\": 2,\n  \"compatibilityScore\": 94.0,\n  \"updatedAt\": \"2026-05-20T15:05:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Latent Space (all users)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/latent-space",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "latent-space"
+              ]
+            },
+            "description": "Returns the latent profile of ALL users in the system. Used by the frontend to render the 3D scatter plot where each dot is a user. Users closer together have more similar musical tastes."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"users\": [\n    { \"userId\": 1, \"userName\": \"Alice\", \"x\": -0.45, \"y\": 0.03, \"z\": -0.34, \"compatibilityScore\": 94.0, \"closestUserId\": 2 },\n    { \"userId\": 2, \"userName\": \"Bob\", \"x\": -0.44, \"y\": 0.05, \"z\": -0.32, \"compatibilityScore\": 94.0, \"closestUserId\": 1 }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User profile management endpoints.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has email', () => pm.expect(json.email).to.be.a('string'));",
+                  "pm.test('No password field', () => pm.expect(json.password).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Returns the authenticated user's profile. Critically, the password field is never exposed — MapStruct ensures it is excluded from UserResponse."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Alice Ramirez\",\n  \"email\": \"alice@musicmatch.com\",\n  \"role\": \"USER\",\n  \"isActive\": true,\n  \"spotifyId\": null,\n  \"createdAt\": \"2026-05-20T15:00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice R.\",\n  \"spotifyId\": \"spotify:user:aliceramirez\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Updates the authenticated user's name and/or Spotify ID. Returns 200 with updated profile."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin-only endpoints. Requires ADMIN role — returns 403 for regular users.",
+      "item": [
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "Returns all users in the system. Requires ADMIN role. Returns 403 Forbidden for USER role."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "2"
+              ]
+            },
+            "description": "Soft-deletes a user (sets isActive = false). The user can no longer log in. Returns 204 No Content."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Spotify Integration",
+      "description": "Spotify Web API proxy — searches real songs and persists them in the local catalog.",
+      "item": [
+        {
+          "name": "Search Spotify",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/spotify/search?q=kendrick",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "spotify",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "kendrick"
+                }
+              ]
+            },
+            "description": "Searches Spotify's catalog for tracks matching the query. Results are automatically persisted in the local Song table with audio features (danceability, energy, valence, tempo). Requires SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env. Returns 502 if Spotify API is unreachable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "description": "Real-time chat between musical twins. Uses REST for history and WebSocket (STOMP) for real-time messaging. Connect to ws://localhost:8080/ws with SockJS, subscribe to /topic/conversation.{id} and /user/queue/messages.",
+      "item": [
+        {
+          "name": "Get or Create Conversation with User",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations/with/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations",
+                "with",
+                "2"
+              ]
+            },
+            "description": "Gets existing conversation with user ID 2 (your musical twin), or creates one if it doesn't exist. Returns all messages in the conversation."
+          }
+        },
+        {
+          "name": "Get My Conversations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations"
+              ]
+            },
+            "description": "Returns all conversations the authenticated user is part of, with unread message count for each."
+          }
+        },
+        {
+          "name": "Send Message (REST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hey! I see we both love Frank Ocean 🎵\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations/1/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations",
+                "1",
+                "messages"
+              ]
+            },
+            "description": "Sends a message via REST. Also broadcasts it via WebSocket to /topic/conversation.{id} and /user/queue/messages for the recipient. Returns 201 with the saved message."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"conversationId\": 1,\n  \"senderId\": 1,\n  \"senderName\": \"Alice\",\n  \"content\": \"Hey! I see we both love Frank Ocean 🎵\",\n  \"isRead\": false,\n  \"sentAt\": \"2026-05-21T15:00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Messages in Conversation",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations/1/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations",
+                "1",
+                "messages"
+              ]
+            },
+            "description": "Returns all messages in conversation 1 ordered chronologically. Also marks all messages from the other user as read."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Twin History",
+      "description": "History of musical twin evolution. Every time SVD is recomputed, a snapshot is saved. Shows how your musical twin has changed as you rate more songs.",
+      "item": [
+        {
+          "name": "Get Full Twin History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/twin-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "twin-history"
+              ]
+            },
+            "description": "Returns all historical snapshots of the authenticated user's latent profile since their first rating. Each entry shows coordX/Y/Z, closestUserId, closestUserName, compatibilityScore and ratingsCount at that point in time. Use this to visualize how the twin evolved."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"coordX\": -0.45, \"coordY\": 0.03, \"coordZ\": -0.34,\n    \"closestUserId\": 3,\n    \"closestUserName\": \"Carlos\",\n    \"compatibilityScore\": 78.0,\n    \"ratingsCount\": 3,\n    \"recordedAt\": \"2026-05-20T14:00:00\"\n  },\n  {\n    \"id\": 5,\n    \"coordX\": -0.41, \"coordY\": 0.08, \"coordZ\": -0.38,\n    \"closestUserId\": 2,\n    \"closestUserName\": \"Bob\",\n    \"compatibilityScore\": 94.0,\n    \"ratingsCount\": 8,\n    \"recordedAt\": \"2026-05-20T16:00:00\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Recent Twin History (last 10)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/twin-history/recent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "twin-history",
+                "recent"
+              ]
+            },
+            "description": "Returns the last 10 snapshots ordered by most recent first. Faster for the frontend when only showing recent changes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social Feed",
+      "description": "Shows recent ratings from users close to you in latent space (compatibility >= 50%). Lets you discover what your musical neighbors are rating.",
+      "item": [
+        {
+          "name": "Get My Feed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/feed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "feed"
+              ]
+            },
+            "description": "Returns up to 20 recent ratings from the 5 users most compatible with you in the SVD latent space (compatibility >= 50%). Each feed item shows the user, their compatibility score, the song they rated and their score. Returns empty array if SVD hasn't been computed yet."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"userId\": 2,\n    \"userName\": \"Bob Torres\",\n    \"compatibilityScore\": 94.0,\n    \"song\": { \"id\": 3, \"title\": \"Retrograde\", \"artist\": \"James Blake\" },\n    \"score\": 5,\n    \"ratedAt\": \"2026-05-20T16:30:00\"\n  },\n  {\n    \"userId\": 2,\n    \"userName\": \"Bob Torres\",\n    \"compatibilityScore\": 94.0,\n    \"song\": { \"id\": 7, \"title\": \"Cómo Me Quieres\", \"artist\": \"Kevin Kaarl\" },\n    \"score\": 4,\n    \"ratedAt\": \"2026-05-20T16:25:00\"\n  }\n]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
