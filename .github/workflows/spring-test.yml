@@ -1,0 +1,42 @@
+name: Backend CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Grant execute permission
+        run: chmod +x mvnw
+
+      - name: Run Maven tests (allow failures)
+        id: run_tests
+        run: |
+          ./mvnw -B -V -DskipTests=false test
+        continue-on-error: true
+
+      - name: Upload surefire reports artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+
+      - name: Fail job if tests failed
+        if: ${{ steps.run_tests.outcome == 'failure' }}
+        run: |
+          echo "Some tests failed. See annotations and surefire-reports artifact for details."
+          exit 1

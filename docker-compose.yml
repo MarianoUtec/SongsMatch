@@ -1,20 +1,21 @@
-version: '3.9'
-
 services:
   postgres:
-    image: postgres:15-alpine
     container_name: musicmatch-db
-    restart: unless-stopped
+    image: postgres:17
+
     environment:
-      POSTGRES_DB: musicmatch
-      POSTGRES_USER: ${DB_USERNAME:-musicmatch}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-musicmatch}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
     ports:
       - "5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-musicmatch} -d musicmatch"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,22 +30,27 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/musicmatch
-      DB_USERNAME: ${DB_USERNAME:-musicmatch}
-      DB_PASSWORD: ${DB_PASSWORD:-musicmatch}
-      JWT_SECRET: ${JWT_SECRET:-musicmatch-super-secret-key-that-is-long-enough-for-hs256}
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
-      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
-      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
-      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
-      MAIL_HOST: ${MAIL_HOST:-smtp.resend.com}
-      MAIL_PORT: ${MAIL_PORT:-465}
-      MAIL_USERNAME: ${MAIL_USERNAME:-resend}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      MAIL_FROM: ${MAIL_FROM:-noreply@musicmatch.com}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}  
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO}
+
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+
+      FRONTEND_URL: ${FRONTEND_URL}
+      BUCKET_NAME: ${BUCKET_NAME}
+      AWS_REGION: ${AWS_REGION}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
