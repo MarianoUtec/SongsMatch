@@ -1,7 +1,7 @@
 package com.musicmatch.algorithm;
 
-import com.musicmatch.entity.Rating;
-import com.musicmatch.exception.SvdComputationException;
+import com.musicmatch.recommendation.domain.Rating;
+import com.musicmatch.exceptions.SvdComputationException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.linear.*;
 import org.springframework.stereotype.Component;

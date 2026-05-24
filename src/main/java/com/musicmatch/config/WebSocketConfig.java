@@ -1,6 +1,6 @@
 package com.musicmatch.config;
 
-import com.musicmatch.security.service.JwtService;
+import com.musicmatch.config.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;

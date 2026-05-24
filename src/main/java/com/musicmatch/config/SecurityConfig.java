@@ -1,6 +1,6 @@
 package com.musicmatch.config;
 
-import com.musicmatch.security.filter.JwtAuthenticationFilter;
+import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

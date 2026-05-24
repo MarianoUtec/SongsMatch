@@ -1,7 +1,7 @@
 package com.musicmatch.config;
 
-import com.musicmatch.entity.Song;
-import com.musicmatch.repository.SongRepository;
+import com.musicmatch.song.domain.Song;
+import com.musicmatch.song.repository.SongRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
