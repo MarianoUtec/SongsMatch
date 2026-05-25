@@ -24,7 +24,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
-    @Value("${mail.from}")
+    @Value("${spring.mail.username}")
     private String from;
 
     @Async("taskExecutor")

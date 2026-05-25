@@ -36,7 +36,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    @Value("${cors.allowed-origins}")
+    @Value("${FRONTEND_URL:http://localhost:5173}")
     private String allowedOrigins;
 
     @Bean
@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
-                    "/v3/api-docs/**", "/v3/api-docs").permitAll()
+                    "/v3/api-docs/**", "/v3/api-docs", "/api/docs", "/api/docs/**").permitAll()
                 // Admin only
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // Everything else requires authentication (including songs)
@@ -104,6 +104,19 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+        
+        CorsConfiguration swaggerConfig = new CorsConfiguration();
+        swaggerConfig.setAllowedOrigins(List.of("*"));
+        swaggerConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        swaggerConfig.setAllowedHeaders(List.of("*"));
+        swaggerConfig.setAllowCredentials(false);
+        source.registerCorsConfiguration("/v3/api-docs/**", swaggerConfig);
+        source.registerCorsConfiguration("/v3/api-docs", swaggerConfig);
+        source.registerCorsConfiguration("/swagger-ui/**", swaggerConfig);
+        source.registerCorsConfiguration("/swagger-ui.html", swaggerConfig);
+        source.registerCorsConfiguration("/api/docs/**", swaggerConfig);
+        source.registerCorsConfiguration("/api/docs", swaggerConfig);
+        
         return source;
     }
 }
