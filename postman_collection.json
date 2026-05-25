@@ -721,21 +721,20 @@
     },
     {
       "name": "Chat",
-      "description": "Real-time chat between musical twins. Uses REST for history and WebSocket (STOMP) for real-time messaging. Connect to ws://localhost:8080/ws with SockJS, subscribe to /topic/conversation.{id} and /user/queue/messages.",
+      "description": "Real-time chat between musical twins. Uses REST for history and WebSocket (STOMP) for real-time messaging. Connect to ws://localhost:8080/ws with SockJS, subscribe to /topic/conversations/{id} and /user/queue/messages.",
       "item": [
         {
           "name": "Get or Create Conversation with User",
           "request": {
             "method": "POST",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/conversations/with/2",
+              "raw": "{{baseUrl}}/api/v1/conversations/with/2",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "chat",
                 "conversations",
                 "with",
                 "2"
@@ -749,14 +748,13 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/conversations",
+              "raw": "{{baseUrl}}/api/v1/conversations",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "chat",
                 "conversations"
               ]
             },
@@ -778,20 +776,19 @@
               "raw": "{\n  \"content\": \"Hey! I see we both love Frank Ocean 🎵\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/conversations/1/messages",
+              "raw": "{{baseUrl}}/api/v1/conversations/1/messages",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "chat",
                 "conversations",
                 "1",
                 "messages"
               ]
             },
-            "description": "Sends a message via REST. Also broadcasts it via WebSocket to /topic/conversation.{id} and /user/queue/messages for the recipient. Returns 201 with the saved message."
+            "description": "Sends a message via REST. Also broadcasts it via WebSocket to /topic/conversations/{id} and /user/queue/messages for the recipient. Returns 201 with the saved message."
           },
           "response": [
             {
@@ -807,14 +804,13 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/conversations/1/messages",
+              "raw": "{{baseUrl}}/api/v1/conversations/1/messages",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "chat",
                 "conversations",
                 "1",
                 "messages"

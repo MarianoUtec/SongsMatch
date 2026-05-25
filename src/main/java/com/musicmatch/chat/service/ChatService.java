@@ -74,6 +74,7 @@ public class ChatService implements IChatService {
 
         MessageResponse response = toMessageResponse(message);
         messagingTemplate.convertAndSend("/topic/conversation." + conversationId, response);
+        messagingTemplate.convertAndSend("/topic/conversations/" + conversationId, response);
 
         Long recipientId = conversation.getUserOne().getId().equals(me.getId())
             ? conversation.getUserTwo().getId()

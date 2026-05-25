@@ -32,10 +32,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ChatController.class)
+@WebMvcTest(ChatRestController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
-@DisplayName("ChatController Tests")
-class ChatControllerTest {
+@DisplayName("ChatRestController Tests")
+class ChatRestControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -61,7 +61,7 @@ class ChatControllerTest {
     void shouldReturn200WithConversationWhenGetOrCreateConversation() throws Exception {
         when(chatService.getOrCreateConversation(2L)).thenReturn(mockConversation);
 
-        mockMvc.perform(post("/api/v1/chat/conversations/with/2").with(csrf()))
+        mockMvc.perform(post("/api/v1/conversations/with/2").with(csrf()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(10))
             .andExpect(jsonPath("$.otherUserName").value("Bob"))
@@ -75,7 +75,7 @@ class ChatControllerTest {
         when(chatService.getOrCreateConversation(999L))
             .thenThrow(new ResourceNotFoundException("User", 999L));
 
-        mockMvc.perform(post("/api/v1/chat/conversations/with/999").with(csrf()))
+        mockMvc.perform(post("/api/v1/conversations/with/999").with(csrf()))
             .andExpect(status().isNotFound());
     }
 
@@ -85,7 +85,7 @@ class ChatControllerTest {
     void shouldReturn200WithConversationListWhenGetMyConversations() throws Exception {
         when(chatService.getMyConversations()).thenReturn(List.of(mockConversation));
 
-        mockMvc.perform(get("/api/v1/chat/conversations"))
+        mockMvc.perform(get("/api/v1/conversations"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(10))
             .andExpect(jsonPath("$[0].otherUserName").value("Bob"))
@@ -98,7 +98,7 @@ class ChatControllerTest {
     void shouldReturn200WithMessagesWhenGetMessagesForOwnConversation() throws Exception {
         when(chatService.getMessages(10L)).thenReturn(List.of(mockMessage));
 
-        mockMvc.perform(get("/api/v1/chat/conversations/10/messages"))
+        mockMvc.perform(get("/api/v1/conversations/10/messages"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].content").value("Hello Bob!"))
             .andExpect(jsonPath("$[0].senderName").value("Alice"));
@@ -111,7 +111,7 @@ class ChatControllerTest {
         when(chatService.getMessages(99L))
             .thenThrow(new ForbiddenException("You are not part of this conversation"));
 
-        mockMvc.perform(get("/api/v1/chat/conversations/99/messages"))
+        mockMvc.perform(get("/api/v1/conversations/99/messages"))
             .andExpect(status().isForbidden());
     }
 
@@ -123,7 +123,7 @@ class ChatControllerTest {
         when(chatService.sendMessage(eq(10L), any(SendMessageRequest.class)))
             .thenReturn(mockMessage);
 
-        mockMvc.perform(post("/api/v1/chat/conversations/10/messages")
+        mockMvc.perform(post("/api/v1/conversations/10/messages")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -138,7 +138,7 @@ class ChatControllerTest {
     void shouldReturn400WhenSendMessageWithBlankContent() throws Exception {
         SendMessageRequest request = new SendMessageRequest("");
 
-        mockMvc.perform(post("/api/v1/chat/conversations/10/messages")
+        mockMvc.perform(post("/api/v1/conversations/10/messages")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -153,7 +153,7 @@ class ChatControllerTest {
         when(chatService.sendMessage(eq(99L), any()))
             .thenThrow(new ForbiddenException("You are not part of this conversation"));
 
-        mockMvc.perform(post("/api/v1/chat/conversations/99/messages")
+        mockMvc.perform(post("/api/v1/conversations/99/messages")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -163,7 +163,7 @@ class ChatControllerTest {
     @Test
     @DisplayName("shouldReturn401WhenAccessChatWithoutAuthentication")
     void shouldReturn401WhenAccessChatWithoutAuthentication() throws Exception {
-        mockMvc.perform(get("/api/v1/chat/conversations"))
+        mockMvc.perform(get("/api/v1/conversations"))
             .andExpect(status().isUnauthorized());
     }
 }
