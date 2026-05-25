@@ -28,4 +28,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{secrets.DOCKER_USERNAME}}/songmatch-backend-dev:latest
+          tags: marianoutec/songmatch-backend-dev:latest
