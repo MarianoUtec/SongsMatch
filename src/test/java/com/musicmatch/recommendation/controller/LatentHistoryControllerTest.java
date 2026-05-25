@@ -1,6 +1,7 @@
 package com.musicmatch.recommendation.controller;
 
 import com.musicmatch.recommendation.dto.response.LatentProfileHistoryResponse;
+import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.recommendation.service.LatentHistoryService;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(LatentHistoryController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("LatentHistoryController Tests")
 class LatentHistoryControllerTest {
 
@@ -29,7 +32,6 @@ class LatentHistoryControllerTest {
 
     @MockBean private LatentHistoryService latentHistoryService;
     @MockBean private JwtService jwtService;
-    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean private UserDetailsService userDetailsService;
 
     private LatentProfileHistoryResponse entry1;
@@ -76,7 +78,6 @@ class LatentHistoryControllerTest {
     @WithMockUser
     @DisplayName("shouldReturn200WithRecentHistoryWhenGetRecentHistory")
     void shouldReturn200WithRecentHistoryWhenGetRecentHistory() throws Exception {
-        // Descending order: newest first
         when(latentHistoryService.getRecentHistory()).thenReturn(List.of(entry2, entry1));
 
         mockMvc.perform(get("/api/v1/users/me/twin-history/recent"))

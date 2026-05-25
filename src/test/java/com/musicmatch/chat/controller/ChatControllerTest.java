@@ -6,6 +6,7 @@ import com.musicmatch.chat.dto.response.ConversationResponse;
 import com.musicmatch.chat.dto.response.MessageResponse;
 import com.musicmatch.exceptions.ForbiddenException;
 import com.musicmatch.exceptions.ResourceNotFoundException;
+import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.chat.service.ChatService;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ChatController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("ChatController Tests")
 class ChatControllerTest {
 
@@ -39,7 +42,6 @@ class ChatControllerTest {
 
     @MockBean private ChatService chatService;
     @MockBean private JwtService jwtService;
-    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean private UserDetailsService userDetailsService;
 
     private ConversationResponse mockConversation;

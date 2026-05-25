@@ -8,11 +8,10 @@ import com.musicmatch.auth.domain.Role;
 import com.musicmatch.song.domain.Song;
 import com.musicmatch.auth.domain.User;
 import com.musicmatch.exceptions.ResourceNotFoundException;
-import com.musicmatch.recommendation.mapper.RatingMapper;
+import com.musicmatch.song.mapper.SongMapper;
 import com.musicmatch.recommendation.repository.RatingRepository;
 import com.musicmatch.song.repository.SongRepository;
-import com.musicmatch.user.repository.UserRepository;
-import com.musicmatch.recommendation.service.RatingService;
+import com.musicmatch.auth.service.SecurityHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,12 +35,10 @@ import static org.mockito.Mockito.*;
 class RatingServiceTest {
 
     @Mock private RatingRepository ratingRepository;
-    @Mock private UserRepository userRepository;
     @Mock private SongRepository songRepository;
-    @Mock private RatingMapper ratingMapper;
+    @Mock private SongMapper songMapper;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private SecurityContext securityContext;
-    @Mock private Authentication authentication;
+    @Mock private SecurityHelper securityHelper;
 
     @InjectMocks
     private RatingService ratingService;
@@ -52,14 +46,10 @@ class RatingServiceTest {
     private User mockUser;
     private Song mockSong;
     private Rating mockRating;
-    private RatingResponse mockRatingResponse;
+    private SongResponse songResponse;
 
     @BeforeEach
     void setUp() {
-        SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("alice@test.com");
-
         mockUser = User.builder().id(1L).name("Alice").email("alice@test.com")
             .password("pw").role(Role.USER).isActive(true).build();
 
@@ -68,10 +58,8 @@ class RatingServiceTest {
 
         mockRating = Rating.builder().id(100L).user(mockUser).song(mockSong).score(5).build();
 
-        SongResponse songResponse = new SongResponse(10L, "Song A", "Artist A",
+        songResponse = new SongResponse(10L, "Song A", "Artist A",
             null, null, "sp1", null, null, null, null);
-        mockRatingResponse = new RatingResponse(100L, 1L, songResponse, 5,
-            LocalDateTime.now(), LocalDateTime.now());
     }
 
     @Test
@@ -79,11 +67,11 @@ class RatingServiceTest {
     void shouldCreateNewRatingWhenUserHasNotRatedSong() {
         RatingRequest request = new RatingRequest(10L, 5);
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
+        when(securityHelper.getCurrentUser()).thenReturn(mockUser);
         when(songRepository.findById(10L)).thenReturn(Optional.of(mockSong));
         when(ratingRepository.findByUserIdAndSongId(1L, 10L)).thenReturn(Optional.empty());
         when(ratingRepository.save(any(Rating.class))).thenReturn(mockRating);
-        when(ratingMapper.toResponse(mockRating)).thenReturn(mockRatingResponse);
+        when(songMapper.toResponse(mockSong)).thenReturn(songResponse);
 
         RatingResponse response = ratingService.rate(request);
 
@@ -98,11 +86,11 @@ class RatingServiceTest {
         RatingRequest request = new RatingRequest(10L, 3);
         Rating existingRating = Rating.builder().id(100L).user(mockUser).song(mockSong).score(5).build();
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
+        when(securityHelper.getCurrentUser()).thenReturn(mockUser);
         when(songRepository.findById(10L)).thenReturn(Optional.of(mockSong));
         when(ratingRepository.findByUserIdAndSongId(1L, 10L)).thenReturn(Optional.of(existingRating));
         when(ratingRepository.save(existingRating)).thenReturn(existingRating);
-        when(ratingMapper.toResponse(existingRating)).thenReturn(mockRatingResponse);
+        when(songMapper.toResponse(mockSong)).thenReturn(songResponse);
 
         ratingService.rate(request);
 
@@ -115,7 +103,7 @@ class RatingServiceTest {
     void shouldThrowResourceNotFoundExceptionWhenRatingSongThatDoesNotExist() {
         RatingRequest request = new RatingRequest(999L, 5);
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
+        when(securityHelper.getCurrentUser()).thenReturn(mockUser);
         when(songRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> ratingService.rate(request))
@@ -125,9 +113,9 @@ class RatingServiceTest {
     @Test
     @DisplayName("shouldReturnAllUserRatingsWhenGetMyRatings")
     void shouldReturnAllUserRatingsWhenGetMyRatings() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
+        when(securityHelper.getCurrentUserId()).thenReturn(1L);
         when(ratingRepository.findByUserId(1L)).thenReturn(List.of(mockRating));
-        when(ratingMapper.toResponse(mockRating)).thenReturn(mockRatingResponse);
+        when(songMapper.toResponse(mockSong)).thenReturn(songResponse);
 
         List<RatingResponse> ratings = ratingService.getMyRatings();
 

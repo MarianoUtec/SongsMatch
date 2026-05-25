@@ -2,6 +2,7 @@ package com.musicmatch.recommendation.controller;
 
 import com.musicmatch.recommendation.dto.response.FeedItemResponse;
 import com.musicmatch.song.dto.response.SongResponse;
+import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.recommendation.service.FeedService;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FeedController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("FeedController Tests")
 class FeedControllerTest {
 
@@ -30,7 +33,6 @@ class FeedControllerTest {
 
     @MockBean private FeedService feedService;
     @MockBean private JwtService jwtService;
-    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean private UserDetailsService userDetailsService;
 
     private FeedItemResponse mockFeedItem;

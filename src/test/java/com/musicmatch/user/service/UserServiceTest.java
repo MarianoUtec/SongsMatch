@@ -47,12 +47,14 @@ class UserServiceTest {
     private User mockUser;
     private UserResponse mockUserResponse;
 
-    @BeforeEach
-    void setUp() {
+    private void mockSecurityContext() {
         SecurityContextHolder.setContext(securityContext);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("alice@test.com");
+    }
 
+    @BeforeEach
+    void setUp() {
         mockUser = User.builder()
             .id(1L).name("Alice").email("alice@test.com")
             .password("encoded_pw").role(Role.USER).isActive(true).build();
@@ -61,11 +63,17 @@ class UserServiceTest {
             Role.USER, true, null, LocalDateTime.now());
     }
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     // ─────────────────────────── getMyProfile ────────────────────────────
 
     @Test
     @DisplayName("shouldReturnUserResponseWhenGetMyProfileWithValidUser")
     void shouldReturnUserResponseWhenGetMyProfileWithValidUser() {
+        mockSecurityContext();
         when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
         when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
 
@@ -79,6 +87,7 @@ class UserServiceTest {
     @Test
     @DisplayName("shouldThrowResourceNotFoundExceptionWhenGetMyProfileWithUnknownEmail")
     void shouldThrowResourceNotFoundExceptionWhenGetMyProfileWithUnknownEmail() {
+        mockSecurityContext();
         when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getMyProfile())
@@ -90,6 +99,7 @@ class UserServiceTest {
     @Test
     @DisplayName("shouldUpdateNameWhenUpdateMyProfileWithNonBlankName")
     void shouldUpdateNameWhenUpdateMyProfileWithNonBlankName() {
+        mockSecurityContext();
         UpdateUserRequest request = new UpdateUserRequest("Bob", null);
         UserResponse updatedResponse = new UserResponse(1L, "Bob", "alice@test.com",
             Role.USER, true, null, LocalDateTime.now());
@@ -108,6 +118,7 @@ class UserServiceTest {
     @Test
     @DisplayName("shouldUpdateSpotifyIdWhenUpdateMyProfileWithSpotifyId")
     void shouldUpdateSpotifyIdWhenUpdateMyProfileWithSpotifyId() {
+        mockSecurityContext();
         UpdateUserRequest request = new UpdateUserRequest(null, "spotify123");
 
         when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
@@ -122,6 +133,7 @@ class UserServiceTest {
     @Test
     @DisplayName("shouldNotUpdateNameWhenUpdateMyProfileWithBlankName")
     void shouldNotUpdateNameWhenUpdateMyProfileWithBlankName() {
+        mockSecurityContext();
         UpdateUserRequest request = new UpdateUserRequest("   ", null);
 
         when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));

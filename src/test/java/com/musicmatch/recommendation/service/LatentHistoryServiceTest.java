@@ -6,8 +6,7 @@ import com.musicmatch.auth.domain.Role;
 import com.musicmatch.auth.domain.User;
 import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.recommendation.repository.LatentProfileHistoryRepository;
-import com.musicmatch.user.repository.UserRepository;
-import com.musicmatch.recommendation.service.LatentHistoryService;
+import com.musicmatch.auth.service.SecurityHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,13 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,9 +27,7 @@ import static org.mockito.Mockito.*;
 class LatentHistoryServiceTest {
 
     @Mock private LatentProfileHistoryRepository historyRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private SecurityContext securityContext;
-    @Mock private Authentication authentication;
+    @Mock private SecurityHelper securityHelper;
 
     @InjectMocks
     private LatentHistoryService latentHistoryService;
@@ -45,10 +38,6 @@ class LatentHistoryServiceTest {
 
     @BeforeEach
     void setUp() {
-        SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("alice@test.com");
-
         alice = User.builder().id(1L).name("Alice").email("alice@test.com")
             .role(Role.USER).isActive(true).build();
 
@@ -72,18 +61,16 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldReturnFullHistoryInAscendingOrderWhenGetMyHistory")
     void shouldReturnFullHistoryInAscendingOrderWhenGetMyHistory() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(alice));
+        when(securityHelper.getCurrentUser()).thenReturn(alice);
         when(historyRepository.findByUserIdOrderByRecordedAtAsc(1L))
             .thenReturn(List.of(historyEntry1, historyEntry2));
 
         List<LatentProfileHistoryResponse> history = latentHistoryService.getMyHistory();
 
         assertThat(history).hasSize(2);
-        // First entry should be older (ascending order)
         assertThat(history.get(0).compatibilityScore()).isEqualTo(70.0);
         assertThat(history.get(0).ratingsCount()).isEqualTo(5);
         assertThat(history.get(0).closestUserName()).isEqualTo("Bob");
-        // Second entry is more recent
         assertThat(history.get(1).compatibilityScore()).isEqualTo(85.0);
         assertThat(history.get(1).ratingsCount()).isEqualTo(12);
     }
@@ -91,7 +78,7 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldReturnEmptyListWhenGetMyHistoryWithNoSnapshots")
     void shouldReturnEmptyListWhenGetMyHistoryWithNoSnapshots() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(alice));
+        when(securityHelper.getCurrentUser()).thenReturn(alice);
         when(historyRepository.findByUserIdOrderByRecordedAtAsc(1L)).thenReturn(List.of());
 
         List<LatentProfileHistoryResponse> history = latentHistoryService.getMyHistory();
@@ -102,7 +89,7 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldThrowResourceNotFoundExceptionWhenGetMyHistoryAndUserNotFound")
     void shouldThrowResourceNotFoundExceptionWhenGetMyHistoryAndUserNotFound() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.empty());
+        when(securityHelper.getCurrentUser()).thenThrow(new ResourceNotFoundException("Authenticated user not found"));
 
         assertThatThrownBy(() -> latentHistoryService.getMyHistory())
             .isInstanceOf(ResourceNotFoundException.class);
@@ -111,7 +98,7 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldMapAllFieldsCorrectlyWhenGetMyHistory")
     void shouldMapAllFieldsCorrectlyWhenGetMyHistory() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(alice));
+        when(securityHelper.getCurrentUser()).thenReturn(alice);
         when(historyRepository.findByUserIdOrderByRecordedAtAsc(1L))
             .thenReturn(List.of(historyEntry1));
 
@@ -134,14 +121,13 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldReturnTop10HistoryEntriesWhenGetRecentHistory")
     void shouldReturnTop10HistoryEntriesWhenGetRecentHistory() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(alice));
+        when(securityHelper.getCurrentUser()).thenReturn(alice);
         when(historyRepository.findTop10ByUserIdOrderByRecordedAtDesc(1L))
-            .thenReturn(List.of(historyEntry2, historyEntry1)); // descending: newest first
+            .thenReturn(List.of(historyEntry2, historyEntry1));
 
         List<LatentProfileHistoryResponse> recentHistory = latentHistoryService.getRecentHistory();
 
         assertThat(recentHistory).hasSize(2);
-        // Newest entry first (descending)
         assertThat(recentHistory.get(0).compatibilityScore()).isEqualTo(85.0);
         assertThat(recentHistory.get(1).compatibilityScore()).isEqualTo(70.0);
         verify(historyRepository).findTop10ByUserIdOrderByRecordedAtDesc(1L);
@@ -150,7 +136,7 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldReturnEmptyListWhenGetRecentHistoryWithNoSnapshots")
     void shouldReturnEmptyListWhenGetRecentHistoryWithNoSnapshots() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(alice));
+        when(securityHelper.getCurrentUser()).thenReturn(alice);
         when(historyRepository.findTop10ByUserIdOrderByRecordedAtDesc(1L)).thenReturn(List.of());
 
         List<LatentProfileHistoryResponse> recentHistory = latentHistoryService.getRecentHistory();
@@ -161,7 +147,7 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldThrowResourceNotFoundExceptionWhenGetRecentHistoryAndUserNotFound")
     void shouldThrowResourceNotFoundExceptionWhenGetRecentHistoryAndUserNotFound() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.empty());
+        when(securityHelper.getCurrentUser()).thenThrow(new ResourceNotFoundException("Authenticated user not found"));
 
         assertThatThrownBy(() -> latentHistoryService.getRecentHistory())
             .isInstanceOf(ResourceNotFoundException.class);
@@ -170,7 +156,7 @@ class LatentHistoryServiceTest {
     @Test
     @DisplayName("shouldCallCorrectRepositoryMethodWhenGetRecentHistoryVsGetMyHistory")
     void shouldCallCorrectRepositoryMethodWhenGetRecentHistoryVsGetMyHistory() {
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(alice));
+        when(securityHelper.getCurrentUser()).thenReturn(alice);
         when(historyRepository.findTop10ByUserIdOrderByRecordedAtDesc(1L)).thenReturn(List.of());
 
         latentHistoryService.getRecentHistory();

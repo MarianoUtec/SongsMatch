@@ -5,6 +5,7 @@ import com.musicmatch.recommendation.dto.request.RatingRequest;
 import com.musicmatch.recommendation.dto.response.RatingResponse;
 import com.musicmatch.song.dto.response.SongResponse;
 import com.musicmatch.exceptions.ResourceNotFoundException;
+import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.recommendation.service.RatingService;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RatingController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("RatingController Tests")
 class RatingControllerTest {
 
@@ -37,7 +40,6 @@ class RatingControllerTest {
 
     @MockBean private RatingService ratingService;
     @MockBean private JwtService jwtService;
-    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean private UserDetailsService userDetailsService;
 
     private RatingResponse mockRatingResponse;

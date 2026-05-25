@@ -6,6 +6,7 @@ import com.musicmatch.user.dto.response.PageResponse;
 import com.musicmatch.user.dto.response.UserResponse;
 import com.musicmatch.auth.domain.Role;
 import com.musicmatch.exceptions.ResourceNotFoundException;
+import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.user.service.UserService;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("UserController Tests")
 class UserControllerTest {
 
@@ -39,7 +42,6 @@ class UserControllerTest {
 
     @MockBean private UserService userService;
     @MockBean private JwtService jwtService;
-    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean private UserDetailsService userDetailsService;
 
     private UserResponse mockUserResponse;
@@ -91,9 +93,6 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("shouldReturn200WithUserListWhenAdminGetAllUsers")
     void shouldReturn200WithUserListWhenAdminGetAllUsers() throws Exception {
-        PageResponse<UserResponse> page = new PageResponse<>(
-            List.of(mockUserResponse), 0, 20, 1L, 1, true);
-
         when(userService.getAllUsers(any())).thenReturn(
             new org.springframework.data.domain.PageImpl<>(List.of(mockUserResponse)));
 

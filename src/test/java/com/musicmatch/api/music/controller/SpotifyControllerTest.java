@@ -4,6 +4,7 @@ import com.musicmatch.song.dto.response.SongResponse;
 import com.musicmatch.song.domain.Song;
 import com.musicmatch.exceptions.SpotifyApiException;
 import com.musicmatch.song.mapper.SongMapper;
+import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.api.music.service.SpotifyService;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(SpotifyController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("SpotifyController Tests")
 class SpotifyControllerTest {
 
@@ -35,7 +38,6 @@ class SpotifyControllerTest {
     @MockBean private SpotifyService spotifyService;
     @MockBean private SongMapper songMapper;
     @MockBean private JwtService jwtService;
-    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean private UserDetailsService userDetailsService;
 
     private Song mockSong;
