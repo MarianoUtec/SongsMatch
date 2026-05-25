@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.Objects.requireNonNull;
 
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("UserRepository Tests")
-@SuppressWarnings("null")
 class UserRepositoryTest {
 
     @Autowired
@@ -30,23 +30,23 @@ class UserRepositoryTest {
     void setUp() {
         userRepository.deleteAll();
 
-        activeUser = User.builder()
+        activeUser = requireNonNull(User.builder()
             .name("Alice")
             .email("alice@test.com")
             .password("encoded_password")
             .role(Role.USER)
             .isActive(true)
-            .build();
+            .build());
 
-        inactiveUser = User.builder()
+        inactiveUser = requireNonNull(User.builder()
             .name("Bob")
             .email("bob@test.com")
             .password("encoded_password")
             .role(Role.USER)
             .isActive(false)
-            .build();
+            .build());
 
-        userRepository.saveAll(List.of(activeUser, inactiveUser));
+        userRepository.saveAll(requireNonNull(List.of(activeUser, inactiveUser)));
     }
 
     @Test
@@ -95,9 +95,9 @@ class UserRepositoryTest {
     @Test
     @DisplayName("shouldExcludeTargetUserWhenFindAllActiveExcept")
     void shouldExcludeTargetUserWhenFindAllActiveExcept() {
-        userRepository.save(User.builder()
+        userRepository.save(requireNonNull(User.builder()
             .name("Carol").email("carol@test.com")
-            .password("pw").isActive(true).role(Role.USER).build());
+            .password("pw").isActive(true).role(Role.USER).build()));
 
         List<User> result = userRepository.findAllActiveExcept(activeUser.getId());
 
@@ -108,15 +108,15 @@ class UserRepositoryTest {
     @Test
     @DisplayName("shouldPersistUserWithRoleAdminWhenSaved")
     void shouldPersistUserWithRoleAdminWhenSaved() {
-        User admin = User.builder()
+        User admin = requireNonNull(User.builder()
             .name("Admin")
             .email("admin@test.com")
             .password("pw")
             .role(Role.ADMIN)
             .isActive(true)
-            .build();
+            .build());
 
-        User saved = userRepository.save(admin);
+        User saved = requireNonNull(userRepository.save(admin));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getRole()).isEqualTo(Role.ADMIN);
@@ -125,10 +125,10 @@ class UserRepositoryTest {
     @Test
     @DisplayName("shouldSetDefaultRoleToUserWhenNotSpecified")
     void shouldSetDefaultRoleToUserWhenNotSpecified() {
-        User user = User.builder()
-            .name("Default").email("default@test.com").password("pw").build();
+        User user = requireNonNull(User.builder()
+            .name("Default").email("default@test.com").password("pw").build());
 
-        User saved = userRepository.save(user);
+        User saved = requireNonNull(userRepository.save(user));
 
         assertThat(saved.getRole()).isEqualTo(Role.USER);
         assertThat(saved.getIsActive()).isTrue();

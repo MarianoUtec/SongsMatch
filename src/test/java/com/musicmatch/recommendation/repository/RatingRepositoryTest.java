@@ -17,11 +17,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.Objects.requireNonNull;
 
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("RatingRepository Tests")
-@SuppressWarnings("null")
 class RatingRepositoryTest {
 
     @Autowired private RatingRepository ratingRepository;
@@ -39,19 +39,19 @@ class RatingRepositoryTest {
         songRepository.deleteAll();
         userRepository.deleteAll();
 
-        user1 = userRepository.save(User.builder()
-            .name("Alice").email("alice@test.com").password("pw").role(Role.USER).isActive(true).build());
-        user2 = userRepository.save(User.builder()
-            .name("Bob").email("bob@test.com").password("pw").role(Role.USER).isActive(true).build());
+        user1 = requireNonNull(userRepository.save(requireNonNull(User.builder()
+            .name("Alice").email("alice@test.com").password("pw").role(Role.USER).isActive(true).build())));
+        user2 = requireNonNull(userRepository.save(requireNonNull(User.builder()
+            .name("Bob").email("bob@test.com").password("pw").role(Role.USER).isActive(true).build())));
 
-        song1 = songRepository.save(Song.builder()
-            .title("Song A").artist("Artist A").spotifyId("sp1").build());
-        song2 = songRepository.save(Song.builder()
-            .title("Song B").artist("Artist B").spotifyId("sp2").build());
+        song1 = requireNonNull(songRepository.save(requireNonNull(Song.builder()
+            .title("Song A").artist("Artist A").spotifyId("sp1").build())));
+        song2 = requireNonNull(songRepository.save(requireNonNull(Song.builder()
+            .title("Song B").artist("Artist B").spotifyId("sp2").build())));
 
-        ratingRepository.save(Rating.builder().user(user1).song(song1).score(5).build());
-        ratingRepository.save(Rating.builder().user(user1).song(song2).score(3).build());
-        ratingRepository.save(Rating.builder().user(user2).song(song1).score(4).build());
+        ratingRepository.save(requireNonNull(Rating.builder().user(user1).song(song1).score(5).build()));
+        ratingRepository.save(requireNonNull(Rating.builder().user(user1).song(song2).score(3).build()));
+        ratingRepository.save(requireNonNull(Rating.builder().user(user2).song(song1).score(4).build()));
     }
 
     @Test
@@ -65,8 +65,8 @@ class RatingRepositoryTest {
     @Test
     @DisplayName("shouldReturnEmptyListWhenFindByUserIdWithNoRatings")
     void shouldReturnEmptyListWhenFindByUserIdWithNoRatings() {
-        User newUser = userRepository.save(User.builder()
-            .name("New").email("new@test.com").password("pw").role(Role.USER).isActive(true).build());
+        User newUser = requireNonNull(userRepository.save(requireNonNull(User.builder()
+            .name("New").email("new@test.com").password("pw").role(Role.USER).isActive(true).build())));
 
         List<Rating> ratings = ratingRepository.findByUserId(newUser.getId());
 

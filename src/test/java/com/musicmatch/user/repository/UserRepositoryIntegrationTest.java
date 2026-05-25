@@ -3,6 +3,7 @@ package com.musicmatch.user.repository;
 import com.musicmatch.auth.domain.Role;
 import com.musicmatch.auth.domain.User;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,25 +19,32 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.Objects.requireNonNull;
 
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("UserRepository Integration Tests (PostgreSQL)")
-@SuppressWarnings({"null", "resource"})
 class UserRepositoryIntegrationTest {
 
+    @SuppressWarnings("resource")
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    static final Object postgres = new PostgreSQLContainer<>("postgres:15-alpine")
         .withDatabaseName("musicmatch_test")
         .withUsername("test")
         .withPassword("test");
 
+    @AfterAll
+    static void tearDownContainer() {
+        ((PostgreSQLContainer<?>) postgres).close();
+    }
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        PostgreSQLContainer<?> container = (PostgreSQLContainer<?>) postgres;
+        registry.add("spring.datasource.url", container::getJdbcUrl);
+        registry.add("spring.datasource.username", container::getUsername);
+        registry.add("spring.datasource.password", container::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.database-platform",
             () -> "org.hibernate.dialect.PostgreSQLDialect");
@@ -52,11 +60,11 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("shouldPersistUserInPostgreSQLWhenSaved")
     void shouldPersistUserInPostgreSQLWhenSaved() {
-        User user = User.builder()
+        User user = requireNonNull(User.builder()
             .name("Alice").email("alice@pg.com")
-            .password("pw").role(Role.USER).isActive(true).build();
+            .password("pw").role(Role.USER).isActive(true).build());
 
-        User saved = userRepository.save(user);
+        User saved = requireNonNull(userRepository.save(user));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getEmail()).isEqualTo("alice@pg.com");
@@ -65,9 +73,9 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("shouldFindByEmailWhenUserExistsInPostgreSQL")
     void shouldFindByEmailWhenUserExistsInPostgreSQL() {
-        userRepository.save(User.builder()
+        userRepository.save(requireNonNull(User.builder()
             .name("Bob").email("bob@pg.com")
-            .password("pw").role(Role.USER).isActive(true).build());
+            .password("pw").role(Role.USER).isActive(true).build()));
 
         Optional<User> result = userRepository.findByEmail("bob@pg.com");
 
@@ -78,24 +86,24 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("shouldEnforceUniqueEmailConstraintInPostgreSQL")
     void shouldEnforceUniqueEmailConstraintInPostgreSQL() {
-        userRepository.save(User.builder()
+        userRepository.save(requireNonNull(User.builder()
             .name("Alice").email("dup@pg.com")
-            .password("pw").role(Role.USER).isActive(true).build());
+            .password("pw").role(Role.USER).isActive(true).build()));
 
         org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
-            userRepository.saveAndFlush(User.builder()
+            userRepository.saveAndFlush(requireNonNull(User.builder()
                 .name("Alice2").email("dup@pg.com")
-                .password("pw").role(Role.USER).isActive(true).build())
+                .password("pw").role(Role.USER).isActive(true).build()))
         );
     }
 
     @Test
     @DisplayName("shouldReturnOnlyActiveUsersWhenFindByIsActiveTrueInPostgreSQL")
     void shouldReturnOnlyActiveUsersWhenFindByIsActiveTrueInPostgreSQL() {
-        userRepository.save(User.builder().name("Active").email("active@pg.com")
-            .password("pw").role(Role.USER).isActive(true).build());
-        userRepository.save(User.builder().name("Inactive").email("inactive@pg.com")
-            .password("pw").role(Role.USER).isActive(false).build());
+        userRepository.save(requireNonNull(User.builder().name("Active").email("active@pg.com")
+            .password("pw").role(Role.USER).isActive(true).build()));
+        userRepository.save(requireNonNull(User.builder().name("Inactive").email("inactive@pg.com")
+            .password("pw").role(Role.USER).isActive(false).build()));
 
         List<User> active = userRepository.findByIsActiveTrue();
 
@@ -106,10 +114,10 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("shouldExcludeGivenUserWhenFindAllActiveExcept")
     void shouldExcludeGivenUserWhenFindAllActiveExcept() {
-        User u1 = userRepository.save(User.builder().name("U1").email("u1@pg.com")
-            .password("pw").role(Role.USER).isActive(true).build());
-        userRepository.save(User.builder().name("U2").email("u2@pg.com")
-            .password("pw").role(Role.USER).isActive(true).build());
+        User u1 = requireNonNull(userRepository.save(requireNonNull(User.builder().name("U1").email("u1@pg.com")
+            .password("pw").role(Role.USER).isActive(true).build())));
+        userRepository.save(requireNonNull(User.builder().name("U2").email("u2@pg.com")
+            .password("pw").role(Role.USER).isActive(true).build()));
 
         List<User> result = userRepository.findAllActiveExcept(u1.getId());
 

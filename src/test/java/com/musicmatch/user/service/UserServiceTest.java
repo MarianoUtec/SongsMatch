@@ -28,12 +28,11 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static java.util.Objects.requireNonNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService Tests")
-@SuppressWarnings("null")
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;
@@ -55,12 +54,12 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        mockUser = User.builder()
+        mockUser = requireNonNull(User.builder()
             .id(1L).name("Alice").email("alice@test.com")
-            .password("encoded_pw").role(Role.USER).isActive(true).build();
+            .password("encoded_pw").role(Role.USER).isActive(true).build());
 
-        mockUserResponse = new UserResponse(1L, "Alice", "alice@test.com",
-            Role.USER, true, null, LocalDateTime.now());
+        mockUserResponse = requireNonNull(new UserResponse(1L, "Alice", "alice@test.com",
+            Role.USER, true, null, LocalDateTime.now()));
     }
 
     @org.junit.jupiter.api.AfterEach
@@ -74,8 +73,8 @@ class UserServiceTest {
     @DisplayName("shouldReturnUserResponseWhenGetMyProfileWithValidUser")
     void shouldReturnUserResponseWhenGetMyProfileWithValidUser() {
         mockSecurityContext();
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
-        when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
+        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(requireNonNull(mockUser)));
+        when(userMapper.toResponse(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUserResponse));
 
         UserResponse response = userService.getMyProfile();
 
@@ -101,18 +100,18 @@ class UserServiceTest {
     void shouldUpdateNameWhenUpdateMyProfileWithNonBlankName() {
         mockSecurityContext();
         UpdateUserRequest request = new UpdateUserRequest("Bob", null);
-        UserResponse updatedResponse = new UserResponse(1L, "Bob", "alice@test.com",
-            Role.USER, true, null, LocalDateTime.now());
+        UserResponse updatedResponse = requireNonNull(new UserResponse(1L, "Bob", "alice@test.com",
+            Role.USER, true, null, LocalDateTime.now()));
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
-        when(userRepository.save(mockUser)).thenReturn(mockUser);
-        when(userMapper.toResponse(mockUser)).thenReturn(updatedResponse);
+        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(requireNonNull(mockUser)));
+        when(userRepository.save(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUser));
+        when(userMapper.toResponse(requireNonNull(mockUser))).thenReturn(requireNonNull(updatedResponse));
 
         UserResponse response = userService.updateMyProfile(request);
 
         assertThat(mockUser.getName()).isEqualTo("Bob");
         assertThat(response.name()).isEqualTo("Bob");
-        verify(userRepository).save(mockUser);
+        verify(userRepository).save(requireNonNull(mockUser));
     }
 
     @Test
@@ -121,9 +120,9 @@ class UserServiceTest {
         mockSecurityContext();
         UpdateUserRequest request = new UpdateUserRequest(null, "spotify123");
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
-        when(userRepository.save(mockUser)).thenReturn(mockUser);
-        when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
+        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(requireNonNull(mockUser)));
+        when(userRepository.save(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUser));
+        when(userMapper.toResponse(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUserResponse));
 
         userService.updateMyProfile(request);
 
@@ -136,9 +135,9 @@ class UserServiceTest {
         mockSecurityContext();
         UpdateUserRequest request = new UpdateUserRequest("   ", null);
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
-        when(userRepository.save(mockUser)).thenReturn(mockUser);
-        when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
+        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(requireNonNull(mockUser)));
+        when(userRepository.save(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUser));
+        when(userMapper.toResponse(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUserResponse));
 
         userService.updateMyProfile(request);
 
@@ -152,10 +151,10 @@ class UserServiceTest {
     @DisplayName("shouldReturnPageOfUsersWhenGetAllUsers")
     void shouldReturnPageOfUsersWhenGetAllUsers() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<User> userPage = new PageImpl<>(List.of(mockUser));
+        Page<User> userPage = new PageImpl<>(requireNonNull(List.of(mockUser)));
 
         when(userRepository.findAll(pageable)).thenReturn(userPage);
-        when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
+        when(userMapper.toResponse(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUserResponse));
 
         Page<UserResponse> result = userService.getAllUsers(pageable);
 
@@ -179,13 +178,13 @@ class UserServiceTest {
     @Test
     @DisplayName("shouldDeactivateUserWhenDeactivateUserWithValidId")
     void shouldDeactivateUserWhenDeactivateUserWithValidId() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
-        when(userRepository.save(mockUser)).thenReturn(mockUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(requireNonNull(mockUser)));
+        when(userRepository.save(requireNonNull(mockUser))).thenReturn(requireNonNull(mockUser));
 
         userService.deactivateUser(1L);
 
         assertThat(mockUser.getIsActive()).isFalse();
-        verify(userRepository).save(mockUser);
+        verify(userRepository).save(requireNonNull(mockUser));
     }
 
     @Test
@@ -196,6 +195,6 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.deactivateUser(999L))
             .isInstanceOf(ResourceNotFoundException.class);
 
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).save(requireNonNull(mockUser));
     }
 }

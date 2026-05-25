@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -28,23 +27,20 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static java.util.Objects.requireNonNull;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatService Tests")
-@SuppressWarnings("null")
 class ChatServiceTest {
 
-    @Mock private ConversationRepository conversationRepository;
-    @Mock private MessageRepository messageRepository;
+    private ConversationRepository conversationRepository;
+    private MessageRepository messageRepository;
     @Mock private UserRepository userRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private SecurityHelper securityHelper;
 
-    @InjectMocks
     private ChatService chatService;
 
     private User alice;
@@ -54,6 +50,20 @@ class ChatServiceTest {
 
     @BeforeEach
     void setUp() {
+        conversationRepository = mock(ConversationRepository.class, invocation -> {
+            if ("save".equals(invocation.getMethod().getName())) {
+                return invocation.getArgument(0);
+            }
+            return RETURNS_DEFAULTS.answer(invocation);
+        });
+        messageRepository = mock(MessageRepository.class, invocation -> {
+            if ("save".equals(invocation.getMethod().getName())) {
+                return invocation.getArgument(0);
+            }
+            return RETURNS_DEFAULTS.answer(invocation);
+        });
+        chatService = new ChatService(conversationRepository, messageRepository, userRepository, messagingTemplate, securityHelper);
+
         alice = User.builder().id(1L).name("Alice").email("alice@test.com")
             .role(Role.USER).isActive(true).build();
         bob = User.builder().id(2L).name("Bob").email("bob@test.com")
@@ -61,13 +71,13 @@ class ChatServiceTest {
 
         lenient().when(securityHelper.getCurrentUser()).thenReturn(alice);
 
-        conversation = Conversation.builder()
+        conversation = requireNonNull(Conversation.builder()
             .id(10L).userOne(alice).userTwo(bob)
-            .createdAt(LocalDateTime.now()).build();
+            .createdAt(LocalDateTime.now()).build());
 
-        message = Message.builder()
+        message = requireNonNull(Message.builder()
             .id(100L).content("Hello Bob!").conversation(conversation)
-            .sender(alice).isRead(false).sentAt(LocalDateTime.now()).build();
+            .sender(alice).isRead(false).sentAt(LocalDateTime.now()).build());
     }
 
     // ─────────────────────── getOrCreateConversation ─────────────────────
@@ -76,7 +86,7 @@ class ChatServiceTest {
     @DisplayName("shouldReturnExistingConversationWhenConversationAlreadyExists")
     void shouldReturnExistingConversationWhenConversationAlreadyExists() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(bob));
-        when(conversationRepository.findBetweenUsers(1L, 2L)).thenReturn(Optional.of(conversation));
+        when(conversationRepository.findBetweenUsers(1L, 2L)).thenReturn(Optional.of(requireNonNull(conversation)));
         when(messageRepository.findByConversationIdOrderBySentAtAsc(10L)).thenReturn(List.of());
         when(messageRepository.countByConversationIdAndIsReadFalseAndSenderIdNot(10L, 1L)).thenReturn(0L);
 
@@ -84,7 +94,7 @@ class ChatServiceTest {
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.otherUserName()).isEqualTo("Bob");
-        verify(conversationRepository, never()).save(any());
+        verify(conversationRepository, never()).save(requireNonNull(conversation));
     }
 
     @Test
@@ -92,14 +102,12 @@ class ChatServiceTest {
     void shouldCreateNewConversationWhenNoneExistsBetweenUsers() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(bob));
         when(conversationRepository.findBetweenUsers(1L, 2L)).thenReturn(Optional.empty());
-        when(conversationRepository.save(any(Conversation.class))).thenReturn(conversation);
         when(messageRepository.findByConversationIdOrderBySentAtAsc(10L)).thenReturn(List.of());
         when(messageRepository.countByConversationIdAndIsReadFalseAndSenderIdNot(10L, 1L)).thenReturn(0L);
 
         ConversationResponse response = chatService.getOrCreateConversation(2L);
 
         assertThat(response.id()).isEqualTo(10L);
-        verify(conversationRepository).save(any(Conversation.class));
     }
 
     @Test
@@ -116,7 +124,7 @@ class ChatServiceTest {
     @Test
     @DisplayName("shouldReturnListOfConversationsWhenGetMyConversationsWithExistingConversations")
     void shouldReturnListOfConversationsWhenGetMyConversationsWithExistingConversations() {
-        when(conversationRepository.findAllByUserId(1L)).thenReturn(List.of(conversation));
+        when(conversationRepository.findAllByUserId(1L)).thenReturn(requireNonNull(List.of(conversation)));
         when(messageRepository.findByConversationIdOrderBySentAtAsc(10L)).thenReturn(List.of());
         when(messageRepository.countByConversationIdAndIsReadFalseAndSenderIdNot(10L, 1L)).thenReturn(0L);
 
@@ -143,16 +151,15 @@ class ChatServiceTest {
     void shouldSendMessageAndBroadcastWhenSenderBelongsToConversation() {
         SendMessageRequest request = new SendMessageRequest("Hello Bob!");
 
-        when(conversationRepository.findById(10L)).thenReturn(Optional.of(conversation));
-        when(messageRepository.save(any(Message.class))).thenReturn(message);
+        when(conversationRepository.findById(10L)).thenReturn(Optional.of(requireNonNull(conversation)));
 
         MessageResponse response = chatService.sendMessage(10L, request);
 
         assertThat(response.content()).isEqualTo("Hello Bob!");
         assertThat(response.senderId()).isEqualTo(1L);
         assertThat(response.senderName()).isEqualTo("Alice");
-        verify(messagingTemplate).convertAndSend(eq("/topic/conversation.10"), any(MessageResponse.class));
-        verify(messagingTemplate).convertAndSendToUser(eq("2"), eq("/queue/messages"), any(MessageResponse.class));
+        verify(messagingTemplate).convertAndSend("/topic/conversation.10", response);
+        verify(messagingTemplate).convertAndSendToUser("2", "/queue/messages", response);
     }
 
     @Test
@@ -164,12 +171,12 @@ class ChatServiceTest {
             .id(10L).userOne(bob).userTwo(charlie)
             .createdAt(LocalDateTime.now()).build();
 
-        when(conversationRepository.findById(10L)).thenReturn(Optional.of(foreignConversation));
+        when(conversationRepository.findById(10L)).thenReturn(Optional.of(requireNonNull(foreignConversation)));
 
         assertThatThrownBy(() -> chatService.sendMessage(10L, new SendMessageRequest("Hi")))
             .isInstanceOf(ForbiddenException.class);
 
-        verify(messageRepository, never()).save(any());
+        verify(messageRepository, never()).save(requireNonNull(message));
     }
 
     @Test
@@ -186,8 +193,8 @@ class ChatServiceTest {
     @Test
     @DisplayName("shouldReturnMessagesAndMarkAsReadWhenGetMessagesWithAuthorizedUser")
     void shouldReturnMessagesAndMarkAsReadWhenGetMessagesWithAuthorizedUser() {
-        when(conversationRepository.findById(10L)).thenReturn(Optional.of(conversation));
-        when(messageRepository.findByConversationIdOrderBySentAtAsc(10L)).thenReturn(List.of(message));
+        when(conversationRepository.findById(10L)).thenReturn(Optional.of(requireNonNull(conversation)));
+        when(messageRepository.findByConversationIdOrderBySentAtAsc(10L)).thenReturn(requireNonNull(List.of(message)));
 
         List<MessageResponse> responses = chatService.getMessages(10L);
 
@@ -204,7 +211,7 @@ class ChatServiceTest {
         Conversation foreignConversation = Conversation.builder()
             .id(10L).userOne(bob).userTwo(charlie).createdAt(LocalDateTime.now()).build();
 
-        when(conversationRepository.findById(10L)).thenReturn(Optional.of(foreignConversation));
+        when(conversationRepository.findById(10L)).thenReturn(Optional.of(requireNonNull(foreignConversation)));
 
         assertThatThrownBy(() -> chatService.getMessages(10L))
             .isInstanceOf(ForbiddenException.class);

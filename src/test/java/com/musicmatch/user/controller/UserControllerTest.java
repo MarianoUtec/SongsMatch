@@ -27,6 +27,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static java.util.Objects.requireNonNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,7 +35,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(UserController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("UserController Tests")
-@SuppressWarnings("null")
 class UserControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -69,15 +69,15 @@ class UserControllerTest {
     @DisplayName("shouldReturn200WithUpdatedProfileWhenUpdateMyProfile")
     void shouldReturn200WithUpdatedProfileWhenUpdateMyProfile() throws Exception {
         UpdateUserRequest request = new UpdateUserRequest("Alice Updated", null);
-        UserResponse updated = new UserResponse(1L, "Alice Updated", "alice@test.com",
-            Role.USER, true, null, LocalDateTime.now());
+        UserResponse updated = requireNonNull(new UserResponse(1L, "Alice Updated", "alice@test.com",
+            Role.USER, true, null, LocalDateTime.now()));
 
         when(userService.updateMyProfile(any(UpdateUserRequest.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/v1/users/me")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .with(requireNonNull(csrf()))
+                .contentType(requireNonNull(MediaType.APPLICATION_JSON))
+            .content(requireNonNull(objectMapper.writeValueAsString(request))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Alice Updated"));
     }
@@ -94,7 +94,7 @@ class UserControllerTest {
     @DisplayName("shouldReturn200WithUserListWhenAdminGetAllUsers")
     void shouldReturn200WithUserListWhenAdminGetAllUsers() throws Exception {
         when(userService.getAllUsers(any())).thenReturn(
-            new org.springframework.data.domain.PageImpl<>(List.of(mockUserResponse)));
+            requireNonNull(new org.springframework.data.domain.PageImpl<>(requireNonNull(List.of(mockUserResponse)))));
 
         mockMvc.perform(get("/api/v1/admin/users"))
             .andExpect(status().isOk());
@@ -112,7 +112,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("shouldReturn204WhenAdminDeactivatesUser")
     void shouldReturn204WhenAdminDeactivatesUser() throws Exception {
-        mockMvc.perform(delete("/api/v1/admin/users/1").with(csrf()))
+        mockMvc.perform(delete("/api/v1/admin/users/1").with(requireNonNull(csrf())))
             .andExpect(status().isNoContent());
     }
 
@@ -123,7 +123,7 @@ class UserControllerTest {
         doThrow(new ResourceNotFoundException("User", 999L))
             .when(userService).deactivateUser(999L);
 
-        mockMvc.perform(delete("/api/v1/admin/users/999").with(csrf()))
+        mockMvc.perform(delete("/api/v1/admin/users/999").with(requireNonNull(csrf())))
             .andExpect(status().isNotFound());
     }
 }
