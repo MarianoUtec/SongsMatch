@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
-                    "/v3/api-docs/**", "/v3/api-docs", "/api/docs", "/api/docs/**").permitAll()
+                    "/v3/api-docs/**", "/v3/api-docs", "/api/docs", "/api/docs/**", "/api/swagger-ui/**").permitAll()
                 // Admin only
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // Everything else requires authentication (including songs)
@@ -116,6 +116,7 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/swagger-ui.html", swaggerConfig);
         source.registerCorsConfiguration("/api/docs/**", swaggerConfig);
         source.registerCorsConfiguration("/api/docs", swaggerConfig);
+        source.registerCorsConfiguration("/api/swagger-ui/**", swaggerConfig);
         
         return source;
     }
