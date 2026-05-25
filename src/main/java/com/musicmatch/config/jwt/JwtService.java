@@ -18,13 +18,13 @@ import java.util.function.Function;
 @Slf4j
 public class JwtService {
 
-    @Value("${jwt.secret}")
+    @Value("${spring.security.jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
+    @Value("${spring.security.jwt.expiration}")
     private long expiration;
 
-    @Value("${jwt.refresh-expiration}")
+    @Value("${spring.security.jwt.refresh-expiration}")
     private long refreshExpiration;
 
     public String generateToken(UserDetails userDetails) {
