@@ -4,14 +4,6 @@ on:
   push:
     branches:
       - "main"
-    paths:
-      - "Dockerfile"
-      - "docker-compose.yml"
-      - "mvnw"
-      - "mvnw.cmd"
-      - "pom.xml"
-      - "src/**"
-      - ".github/workflows/docker-build-images.yml"
 
 jobs:
   build-and-push:
@@ -28,6 +20,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
+      
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/musicmatch:latest .
 
