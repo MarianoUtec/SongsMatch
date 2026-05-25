@@ -28,10 +28,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(SpotifyController.class)
+@WebMvcTest(MusicbrainzController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
-@DisplayName("SpotifyController Tests")
-class SpotifyControllerTest {
+@DisplayName("MusicbrainzController Tests")
+class MusicbrainzControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
@@ -46,9 +46,9 @@ class SpotifyControllerTest {
     @BeforeEach
     void setUp() {
         mockSong = Song.builder().id(1L).title("Bohemian Rhapsody")
-            .artist("Queen").spotifyId("sp_bohemian").build();
+            .artist("Queen").musicbrainzId("mb_bohemian").build();
         mockSongResponse = new SongResponse(1L, "Bohemian Rhapsody", "Queen",
-            null, null, "sp_bohemian", null, null, null, null);
+            null, null, null, null, null, null, null, "mb_bohemian");
     }
 
     @Test
@@ -59,12 +59,12 @@ class SpotifyControllerTest {
             .thenReturn(List.of(mockSong));
         when(songMapper.toResponse(mockSong)).thenReturn(mockSongResponse);
 
-        mockMvc.perform(get("/api/v1/spotify/search")
+        mockMvc.perform(get("/api/v1/musicbrainz/search")
                 .param("q", "queen"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].title").value("Bohemian Rhapsody"))
             .andExpect(jsonPath("$[0].artist").value("Queen"))
-            .andExpect(jsonPath("$[0].spotifyId").value("sp_bohemian"));
+            .andExpect(jsonPath("$[0].musicbrainzId").value("mb_bohemian"));
     }
 
     @Test
@@ -74,7 +74,7 @@ class SpotifyControllerTest {
         when(musicbrainzService.searchAndSave(eq("xyzunknownband123"), anyInt()))
             .thenReturn(List.of());
 
-        mockMvc.perform(get("/api/v1/spotify/search")
+        mockMvc.perform(get("/api/v1/musicbrainz/search")
                 .param("q", "xyzunknownband123"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
@@ -82,43 +82,9 @@ class SpotifyControllerTest {
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("shouldReturn200WithMultipleSongsWhenSearchMatchesMultiple")
-    void shouldReturn200WithMultipleSongsWhenSearchMatchesMultiple() throws Exception {
-        Song song2 = Song.builder().id(2L).title("We Will Rock You")
-            .artist("Queen").spotifyId("sp_wwry").build();
-        SongResponse response2 = new SongResponse(2L, "We Will Rock You", "Queen",
-            null, null, "sp_wwry", null, null, null, null);
-
-        when(musicbrainzService.searchAndSave(eq("queen"), anyInt()))
-            .thenReturn(List.of(mockSong, song2));
-        when(songMapper.toResponse(mockSong)).thenReturn(mockSongResponse);
-        when(songMapper.toResponse(song2)).thenReturn(response2);
-
-        mockMvc.perform(get("/api/v1/spotify/search")
-                .param("q", "queen")
-                .param("limit", "2"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[1].title").value("We Will Rock You"));
-    }
-
-    @Test
-    @WithMockUser
-    @DisplayName("shouldReturn502WhenSpotifyApiIsUnavailable")
-    void shouldReturn502WhenSpotifyApiIsUnavailable() throws Exception {
-        when(musicbrainzService.searchAndSave(any(), anyInt()))
-            .thenThrow(new SpotifyApiException("Spotify API unavailable"));
-
-        mockMvc.perform(get("/api/v1/spotify/search")
-                .param("q", "queen"))
-            .andExpect(status().isBadGateway());
-    }
-
-    @Test
-    @DisplayName("shouldReturn401WhenSearchSpotifyWithoutAuthentication")
-    void shouldReturn401WhenSearchSpotifyWithoutAuthentication() throws Exception {
-        mockMvc.perform(get("/api/v1/spotify/search")
+    @DisplayName("shouldReturn401WhenSearchWithoutAuthentication")
+    void shouldReturn401WhenSearchWithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/musicbrainz/search")
                 .param("q", "queen"))
             .andExpect(status().isUnauthorized());
     }

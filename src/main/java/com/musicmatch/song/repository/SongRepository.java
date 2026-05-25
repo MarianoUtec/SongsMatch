@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface SongRepository extends JpaRepository<Song, Long> {
     Optional<Song> findBySpotifyId(String spotifyId);
     boolean existsBySpotifyId(String spotifyId);
+    Optional<Song> findByMusicbrainzId(String musicbrainzId);
+    boolean existsByMusicbrainzId(String musicbrainzId);
     List<Song> findByArtistContainingIgnoreCase(String artist);
     List<Song> findByTitleContainingIgnoreCase(String title);
 

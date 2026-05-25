@@ -12,7 +12,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "songs", indexes = {
-    @Index(name = "idx_song_spotify_id", columnList = "spotify_id", unique = true)
+    @Index(name = "idx_song_spotify_id", columnList = "spotify_id", unique = true),
+    @Index(name = "idx_song_musicbrainz_id", columnList = "musicbrainz_id", unique = true)
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Song {
@@ -31,6 +32,9 @@ public class Song {
 
     @Column(name = "spotify_id", unique = true, length = 100)
     private String spotifyId;
+
+    @Column(name = "musicbrainz_id", unique = true, length = 100)
+    private String musicbrainzId;
 
     @Column(name = "album_name", length = 200)
     private String albumName;
