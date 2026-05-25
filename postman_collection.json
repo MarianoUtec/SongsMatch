@@ -720,6 +720,42 @@
       ]
     },
     {
+      "name": "MusicBrainz Integration",
+      "description": "MusicBrainz search proxy — searches MusicBrainz for tracks and persists them in the local catalog.",
+      "item": [
+        {
+          "name": "Search MusicBrainz",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/musicbrainz/search?q=queen&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "musicbrainz",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "queen"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Searches MusicBrainz for tracks matching the query. Persists new tracks in the local Song table and returns combined results (falls back to Spotify if needed)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Chat",
       "description": "Real-time chat between musical twins. Uses REST for history and WebSocket (STOMP) for real-time messaging. Connect to ws://localhost:8080/ws with SockJS, subscribe to /topic/conversations/{id} and /user/queue/messages.",
       "item": [
