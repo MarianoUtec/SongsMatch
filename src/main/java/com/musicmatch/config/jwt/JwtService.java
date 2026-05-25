@@ -9,6 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -79,9 +82,54 @@ public class JwtService {
     }
 
     private SecretKey getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(
-            java.util.Base64.getEncoder().encodeToString(secret.getBytes())
-        );
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret is not configured");
+        }
+
+        byte[] keyBytes = null;
+
+        // Try Base64 decoding first (common case)
+        try {
+            keyBytes = Decoders.BASE64.decode(secret);
+        } catch (Exception ignored) {
+        }
+
+        // If not base64, try hex decoding (common in test fixtures)
+        if (keyBytes == null) {
+            try {
+                if (secret.matches("^[0-9a-fA-F]+$") && (secret.length() % 2 == 0)) {
+                    int len = secret.length();
+                    byte[] bytes = new byte[len / 2];
+                    for (int i = 0; i < len; i += 2) {
+                        bytes[i / 2] = (byte) ((Character.digit(secret.charAt(i), 16) << 4)
+                            + Character.digit(secret.charAt(i + 1), 16));
+                    }
+                    keyBytes = bytes;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        // Fallback: derive a 256-bit key from the configured secret using SHA-256
+        if (keyBytes == null) {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                keyBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException("Unable to derive JWT signing key", e);
+            }
+        }
+
+        // Ensure key is at least 256 bits (32 bytes) by hashing if necessary
+        if (keyBytes.length < 32) {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                keyBytes = digest.digest(keyBytes);
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException("Unable to expand JWT signing key", e);
+            }
+        }
+
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
