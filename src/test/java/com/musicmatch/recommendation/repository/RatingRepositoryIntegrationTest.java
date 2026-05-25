@@ -4,7 +4,6 @@ import com.musicmatch.recommendation.domain.Rating;
 import com.musicmatch.auth.domain.Role;
 import com.musicmatch.song.domain.Song;
 import com.musicmatch.auth.domain.User;
-import com.musicmatch.recommendation.repository.RatingRepository;
 import com.musicmatch.song.repository.SongRepository;
 import com.musicmatch.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("RatingRepository Integration Tests (PostgreSQL)")
+@SuppressWarnings({"null", "resource"})
 class RatingRepositoryIntegrationTest {
 
     @Container

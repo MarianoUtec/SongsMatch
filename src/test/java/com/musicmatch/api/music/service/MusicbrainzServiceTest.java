@@ -6,14 +6,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -21,12 +19,11 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MusicbrainzService Tests")
+@SuppressWarnings("null")
 class MusicbrainzServiceTest {
 
     @Mock private SongRepository songRepository;
@@ -54,7 +51,6 @@ class MusicbrainzServiceTest {
 
     @Test
     @DisplayName("shouldReturnMusicbrainzSongsWhenMusicbrainzApiIsSuccessful")
-    @SuppressWarnings("unchecked")
     void shouldReturnMusicbrainzSongsWhenMusicbrainzApiIsSuccessful() {
         // Mock MusicBrainz Response
         Map<String, Object> responseBody = new HashMap<>();
@@ -78,9 +74,11 @@ class MusicbrainzServiceTest {
         recordings.add(recording);
         responseBody.put("recordings", recordings);
 
-        ResponseEntity<Map> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
+        ResponseEntity<Map<String, Object>> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+        when(restTemplate.exchange(
+            org.mockito.ArgumentMatchers.<RequestEntity<?>>any(),
+            org.mockito.ArgumentMatchers.<ParameterizedTypeReference<Map<String, Object>>>any()))
             .thenReturn(responseEntity);
 
         when(songRepository.findByMusicbrainzId("mb_wwry")).thenReturn(Optional.empty());
@@ -97,14 +95,15 @@ class MusicbrainzServiceTest {
 
     @Test
     @DisplayName("shouldFallbackToSpotifyWhenMusicbrainzApiReturnsEmptyList")
-    @SuppressWarnings("unchecked")
     void shouldFallbackToSpotifyWhenMusicbrainzApiReturnsEmptyList() {
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("recordings", Collections.emptyList());
 
-        ResponseEntity<Map> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
+        ResponseEntity<Map<String, Object>> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+        when(restTemplate.exchange(
+            org.mockito.ArgumentMatchers.<RequestEntity<?>>any(),
+            org.mockito.ArgumentMatchers.<ParameterizedTypeReference<Map<String, Object>>>any()))
             .thenReturn(responseEntity);
 
         when(spotifyService.searchAndSave("queen", 10)).thenReturn(List.of(mockSongSpotify));
@@ -119,9 +118,10 @@ class MusicbrainzServiceTest {
 
     @Test
     @DisplayName("shouldFallbackToSpotifyWhenMusicbrainzApiThrowsException")
-    @SuppressWarnings("unchecked")
     void shouldFallbackToSpotifyWhenMusicbrainzApiThrowsException() {
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+        when(restTemplate.exchange(
+            org.mockito.ArgumentMatchers.<RequestEntity<?>>any(),
+            org.mockito.ArgumentMatchers.<ParameterizedTypeReference<Map<String, Object>>>any()))
             .thenThrow(new RuntimeException("API is down"));
 
         when(spotifyService.searchAndSave("queen", 10)).thenReturn(List.of(mockSongSpotify));

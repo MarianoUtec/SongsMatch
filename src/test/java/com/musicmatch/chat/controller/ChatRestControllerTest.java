@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(ChatRestController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("ChatRestController Tests")
+@SuppressWarnings("null")
 class ChatRestControllerTest {
 
     @Autowired private MockMvc mockMvc;

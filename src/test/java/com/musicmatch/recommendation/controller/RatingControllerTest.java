@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(RatingController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("RatingController Tests")
+@SuppressWarnings("null")
 class RatingControllerTest {
 
     @Autowired private MockMvc mockMvc;

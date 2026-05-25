@@ -7,7 +7,6 @@ import com.musicmatch.auth.domain.User;
 import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.user.mapper.UserMapper;
 import com.musicmatch.user.repository.UserRepository;
-import com.musicmatch.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("SongRepository Tests")
+@SuppressWarnings("null")
 class SongRepositoryTest {
 
     @Autowired private SongRepository songRepository;
@@ -29,8 +30,6 @@ class SongRepositoryTest {
 
     private User user;
     private Song song1;
-    private Song song2;
-    private Song song3;
 
     @BeforeEach
     void setUp() {
@@ -40,9 +39,9 @@ class SongRepositoryTest {
 
         song1 = songRepository.save(Song.builder()
             .title("Bohemian Rhapsody").artist("Queen").spotifyId("sp_bohemian").build());
-        song2 = songRepository.save(Song.builder()
+        songRepository.save(Song.builder()
             .title("Stairway to Heaven").artist("Led Zeppelin").spotifyId("sp_stairway").build());
-        song3 = songRepository.save(Song.builder()
+        songRepository.save(Song.builder()
             .title("Hotel California").artist("Eagles").spotifyId("sp_hotel").build());
 
         user = userRepository.save(User.builder()

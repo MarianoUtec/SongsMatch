@@ -2,7 +2,6 @@ package com.musicmatch.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.musicmatch.user.dto.request.UpdateUserRequest;
-import com.musicmatch.user.dto.response.PageResponse;
 import com.musicmatch.user.dto.response.UserResponse;
 import com.musicmatch.auth.domain.Role;
 import com.musicmatch.exceptions.ResourceNotFoundException;

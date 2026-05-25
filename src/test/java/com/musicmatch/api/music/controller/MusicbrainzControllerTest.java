@@ -2,7 +2,6 @@ package com.musicmatch.api.music.controller;
 
 import com.musicmatch.song.dto.response.SongResponse;
 import com.musicmatch.song.domain.Song;
-import com.musicmatch.exceptions.SpotifyApiException;
 import com.musicmatch.song.mapper.SongMapper;
 import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
@@ -21,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;

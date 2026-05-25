@@ -11,6 +11,7 @@ import com.musicmatch.exceptions.UnauthorizedException;
 import com.musicmatch.user.mapper.UserMapper;
 import com.musicmatch.user.repository.UserRepository;
 import com.musicmatch.config.jwt.JwtService;
+import com.musicmatch.recommendation.service.async.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,7 @@ class AuthServiceTest {
     @Mock private UserDetailsService userDetailsService;
     @Mock private UserMapper userMapper;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private EmailService emailService;
 
     @InjectMocks
     private AuthService authService;
@@ -80,6 +82,7 @@ class AuthServiceTest {
         when(jwtService.generateToken(mockUserDetails)).thenReturn("access_token");
         when(jwtService.generateRefreshToken(mockUserDetails)).thenReturn("refresh_token");
         when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
+        when(emailService.sendWelcomeEmailSync(mockUser)).thenReturn(true);
 
         RegistrationResult result = authService.register(request);
         AuthResponse response = result.authResponse();
@@ -88,7 +91,7 @@ class AuthServiceTest {
         assertThat(response.refreshToken()).isEqualTo("refresh_token");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.user().email()).isEqualTo("alice@test.com");
-        verify(eventPublisher).publishEvent(any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
