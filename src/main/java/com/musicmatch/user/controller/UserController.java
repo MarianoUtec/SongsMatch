@@ -5,7 +5,6 @@ import com.musicmatch.user.service.IUserService;
 import com.musicmatch.user.dto.request.UpdateUserRequest;
 import com.musicmatch.user.dto.response.PageResponse;
 import com.musicmatch.user.dto.response.UserResponse;
-import com.musicmatch.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

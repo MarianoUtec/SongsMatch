@@ -11,7 +11,6 @@ import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.song.mapper.SongMapper;
 import com.musicmatch.recommendation.repository.RatingRepository;
 import com.musicmatch.song.repository.SongRepository;
-import com.musicmatch.recommendation.service.IRatingService;
 import com.musicmatch.auth.service.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +36,8 @@ public class RatingService implements IRatingService {
     @Transactional
     public RatingResponse rate(RatingRequest request) {
         User user = securityHelper.getCurrentUser();
-        Song song = songRepository.findById(request.songId())
+        Long songId = Objects.requireNonNull(request.songId());
+        Song song = songRepository.findById(songId)
             .orElseThrow(() -> new ResourceNotFoundException("Song", request.songId()));
 
         Rating rating = ratingRepository.findByUserIdAndSongId(user.getId(), song.getId())
@@ -60,9 +61,10 @@ public class RatingService implements IRatingService {
     @Override
     @Transactional
     public void deleteRating(Long ratingId) {
-        Rating rating = ratingRepository.findById(ratingId)
+        Long currentRatingId = Objects.requireNonNull(ratingId);
+        Rating rating = ratingRepository.findById(currentRatingId)
             .orElseThrow(() -> new ResourceNotFoundException("Rating", ratingId));
-        ratingRepository.delete(rating);
+        ratingRepository.delete(Objects.requireNonNull(rating));
     }
 
     private RatingResponse buildResponse(Rating rating, Song song) {

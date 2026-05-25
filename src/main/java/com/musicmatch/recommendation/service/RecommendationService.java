@@ -12,12 +12,12 @@ import com.musicmatch.song.mapper.SongMapper;
 import com.musicmatch.recommendation.repository.LatentProfileRepository;
 import com.musicmatch.recommendation.repository.RecommendationRepository;
 import com.musicmatch.user.repository.UserRepository;
-import com.musicmatch.recommendation.service.IRecommendationService;
 import com.musicmatch.auth.service.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -37,14 +37,16 @@ public class RecommendationService implements IRecommendationService {
             .orElseThrow(() -> new ResourceNotFoundException(
                 "No recommendations yet. Rate at least 5 songs to get started!"));
 
+        Long basedOnUserId = Objects.requireNonNull(rec.getBasedOnUserId());
+
         List<SongResponse> songs = rec.getSongs().stream()
             .map(songMapper::toResponse).toList();
-        String basedOnUserName = userRepository.findById(rec.getBasedOnUserId())
+        String basedOnUserName = userRepository.findById(basedOnUserId)
             .map(User::getName).orElse("Unknown");
 
         return new RecommendationResponse(
             rec.getId(), user.getId(), songs,
-            rec.getBasedOnUserId(), basedOnUserName, rec.getCreatedAt()
+            basedOnUserId, basedOnUserName, rec.getCreatedAt()
         );
     }
 

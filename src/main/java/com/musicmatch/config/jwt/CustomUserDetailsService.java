@@ -1,6 +1,5 @@
 package com.musicmatch.config.jwt;
 
-import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

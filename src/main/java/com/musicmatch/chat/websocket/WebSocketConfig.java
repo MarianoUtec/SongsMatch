@@ -6,6 +6,7 @@ import com.musicmatch.chat.domain.Conversation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -36,7 +37,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final ConversationRepository conversationRepository;
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
+    public void configureMessageBroker(@NonNull MessageBrokerRegistry registry) {
         // Clients subscribe to /topic/... and /queue/...
         registry.enableSimpleBroker("/topic", "/queue");
         // Messages sent from clients are prefixed with /app
@@ -46,17 +47,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
+    public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
             .setAllowedOriginPatterns("*")
             .withSockJS();
     }
 
     @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
+    public void configureClientInboundChannel(@SuppressWarnings("null") ChannelRegistration registration) {
         registration.interceptors(new ChannelInterceptor() {
             @Override
-            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
                 StompHeaderAccessor accessor =
                     MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 

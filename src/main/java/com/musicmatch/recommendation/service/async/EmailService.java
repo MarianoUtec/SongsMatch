@@ -15,6 +15,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,24 @@ public class EmailService {
         }
     }
 
+    /**
+     * Synchronous attempt to send welcome email. Returns true if sent, false otherwise.
+     * This is used by the registration flow to decide the HTTP response code.
+     */
+    public boolean sendWelcomeEmailSync(User user) {
+        try {
+            Context context = new Context();
+            context.setVariable("name", user.getName());
+            context.setVariable("email", user.getEmail());
+            String html = templateEngine.process("emails/welcome", context);
+            sendHtmlEmail(user.getEmail(), "Welcome to MusicMatch 🎵", html);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to send welcome email to {}: {}", user.getEmail(), e.getMessage());
+            return false;
+        }
+    }
+
     // FIX: método completo con todos los parámetros que necesita el template
     @Async("taskExecutor")
     public void sendRecommendationReadyEmail(User user, List<Song> songs,
@@ -62,10 +81,10 @@ public class EmailService {
     private void sendHtmlEmail(String to, String subject, String html) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        helper.setFrom(from);
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(html, true);
+        helper.setFrom(Objects.requireNonNull(from));
+        helper.setTo(Objects.requireNonNull(to));
+        helper.setSubject(Objects.requireNonNull(subject));
+        helper.setText(Objects.requireNonNull(html), true);
         mailSender.send(message);
         log.info("Email sent to: {}", to);
     }

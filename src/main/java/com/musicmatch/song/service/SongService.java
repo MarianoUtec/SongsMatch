@@ -5,10 +5,10 @@ import com.musicmatch.song.domain.Song;
 import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.song.mapper.SongMapper;
 import com.musicmatch.song.repository.SongRepository;
-import com.musicmatch.song.service.ISongService;
 import com.musicmatch.auth.service.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,7 @@ public class SongService implements ISongService {
     }
 
     @Override
-    public SongResponse getSongById(Long id) {
+    public SongResponse getSongById(@NonNull Long id) {
         Song song = songRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Song", id));
         return songMapper.toResponse(song);
@@ -57,7 +57,7 @@ public class SongService implements ISongService {
 
     @Override
     @Transactional
-    public void deleteSong(Long id) {
+    public void deleteSong(@NonNull Long id) {
         if (!songRepository.existsById(id))
             throw new ResourceNotFoundException("Song", id);
         songRepository.deleteById(id);

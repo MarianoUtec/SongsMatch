@@ -9,7 +9,6 @@ import com.musicmatch.recommendation.domain.Rating;
 import com.musicmatch.recommendation.domain.Recommendation;
 import com.musicmatch.song.domain.Song;
 import com.musicmatch.user.repository.UserRepository;
-import com.musicmatch.song.repository.SongRepository;
 import com.musicmatch.recommendation.repository.LatentProfileHistoryRepository;
 import com.musicmatch.recommendation.repository.LatentProfileRepository;
 import com.musicmatch.recommendation.repository.RatingRepository;
@@ -33,7 +32,6 @@ public class SvdComputationService {
     private final LatentProfileHistoryRepository latentProfileHistoryRepository;
     private final RecommendationRepository recommendationRepository;
     private final UserRepository userRepository;
-    private final SongRepository songRepository;
     private final SvdAlgorithm svdAlgorithm;
     private final EmailService emailService;
 
@@ -68,6 +66,7 @@ public class SvdComputationService {
 
         for (int i = 0; i < userIds.size(); i++) {
             Long userId = userIds.get(i);
+            Long currentUserId = Objects.requireNonNull(userId);
             int closestIdx = svdAlgorithm.findClosestUserIndex(U, i);
             double similarity = closestIdx >= 0
                 ? svdAlgorithm.cosineSimilarity(U[i], U[closestIdx]) : 0;
@@ -77,9 +76,9 @@ public class SvdComputationService {
             final double[] row = U[i];
 
             // Update current LatentProfile
-            LatentProfile profile = latentProfileRepository.findByUserId(userId)
+            LatentProfile profile = latentProfileRepository.findByUserId(currentUserId)
                 .orElse(LatentProfile.builder()
-                    .user(userRepository.getReferenceById(userId))
+                    .user(userRepository.getReferenceById(currentUserId))
                     .build());
 
             profile.setCoordX(row.length > 0 ? row[0] : 0);
@@ -94,8 +93,8 @@ public class SvdComputationService {
                 ? userRepository.findById(closestUserId).map(User::getName).orElse("Unknown")
                 : null;
 
-            LatentProfileHistory history = LatentProfileHistory.builder()
-                .user(userRepository.getReferenceById(userId))
+            LatentProfileHistory history = Objects.requireNonNull(LatentProfileHistory.builder()
+                .user(userRepository.getReferenceById(currentUserId))
                 .coordX(row.length > 0 ? row[0] : 0)
                 .coordY(row.length > 1 ? row[1] : 0)
                 .coordZ(row.length > 2 ? row[2] : 0)
@@ -103,7 +102,7 @@ public class SvdComputationService {
                 .closestUserName(closestUserName)
                 .compatibilityScore(compatibilityScore)
                 .ratingsCount(ratingsCounts.getOrDefault(userId, 0L).intValue())
-                .build();
+                .build());
             latentProfileHistoryRepository.save(history);
         }
     }
@@ -115,13 +114,14 @@ public class SvdComputationService {
 
         for (int i = 0; i < userIds.size(); i++) {
             Long userId = userIds.get(i);
+            Long currentUserId = Objects.requireNonNull(userId);
             int closestIdx = svdAlgorithm.findClosestUserIndex(U, i);
             if (closestIdx < 0) continue;
 
-            Long closestUserId = userIds.get(closestIdx);
+            Long closestUserId = Objects.requireNonNull(userIds.get(closestIdx));
 
             Set<Long> myRatedSongIds = allRatings.stream()
-                .filter(r -> r.getUser().getId().equals(userId))
+                .filter(r -> r.getUser().getId().equals(currentUserId))
                 .map(r -> r.getSong().getId())
                 .collect(Collectors.toSet());
 
@@ -134,14 +134,14 @@ public class SvdComputationService {
                 .collect(Collectors.toList());
 
             if (!recommendations.isEmpty()) {
-                recommendationRepository.deleteByUserId(userId);
-                Recommendation rec = Recommendation.builder()
-                    .user(userRepository.getReferenceById(userId))
+                recommendationRepository.deleteByUserId(currentUserId);
+                Recommendation rec = Objects.requireNonNull(Recommendation.builder()
+                    .user(userRepository.getReferenceById(currentUserId))
                     .songs(recommendations)
                     .basedOnUserId(closestUserId)
-                    .build();
+                    .build());
                 recommendationRepository.save(rec);
-                usersWithNewRecs.add(userId);
+                usersWithNewRecs.add(currentUserId);
             }
         }
         return usersWithNewRecs;
@@ -149,15 +149,16 @@ public class SvdComputationService {
 
     private void notifyUsersWithRecommendations(List<Long> userIds) {
         for (Long userId : userIds) {
-            userRepository.findById(userId).ifPresent(user ->
+            Long currentUserId = Objects.requireNonNull(userId);
+            userRepository.findById(currentUserId).ifPresent(user ->
                 recommendationRepository
-                    .findTopByUserIdOrderByCreatedAtDesc(userId)
+                    .findTopByUserIdOrderByCreatedAtDesc(currentUserId)
                     .ifPresent(rec -> {
                         User matchedUser = userRepository
-                            .findById(rec.getBasedOnUserId()).orElse(null);
+                            .findById(Objects.requireNonNull(rec.getBasedOnUserId())).orElse(null);
                         emailService.sendRecommendationReadyEmail(
                             user, rec.getSongs(), matchedUser,
-                            latentProfileRepository.findByUserId(userId)
+                            latentProfileRepository.findByUserId(currentUserId)
                                 .map(LatentProfile::getCompatibilityScore).orElse(0.0)
                         );
                     })

@@ -1,6 +1,5 @@
 package com.musicmatch.config.jwt;
 
-import com.musicmatch.config.jwt.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

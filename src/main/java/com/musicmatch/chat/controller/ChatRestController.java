@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +23,7 @@ public class ChatRestController {
     // REST: Get or create conversation with a user
     @PostMapping("/with/{userId}")
     public ResponseEntity<ConversationResponse> getOrCreateConversation(
-            @PathVariable Long userId) {
+            @PathVariable @NonNull Long userId) {
         return ResponseEntity.status(HttpStatus.OK)
             .body(chatService.getOrCreateConversation(userId));
     }
@@ -36,14 +37,14 @@ public class ChatRestController {
     // REST: Get messages for a conversation
     @GetMapping("/{id}/messages")
     public ResponseEntity<List<MessageResponse>> getMessages(
-            @PathVariable("id") Long conversationId) {
+            @PathVariable("id") @NonNull Long conversationId) {
         return ResponseEntity.ok(chatService.getMessages(conversationId));
     }
 
     // REST: Send message via HTTP (also broadcasts via WebSocket)
     @PostMapping("/{id}/messages")
     public ResponseEntity<MessageResponse> sendMessage(
-            @PathVariable("id") Long conversationId,
+            @PathVariable("id") @NonNull Long conversationId,
             @Valid @RequestBody SendMessageRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(chatService.sendMessage(conversationId, request));

@@ -11,7 +11,6 @@ import com.musicmatch.exceptions.UnauthorizedException;
 import com.musicmatch.user.mapper.UserMapper;
 import com.musicmatch.user.repository.UserRepository;
 import com.musicmatch.config.jwt.JwtService;
-import com.musicmatch.auth.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,15 +28,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService Tests")
+@SuppressWarnings("null")
 class AuthServiceTest {
 
     @Mock private UserRepository userRepository;
@@ -81,7 +81,8 @@ class AuthServiceTest {
         when(jwtService.generateRefreshToken(mockUserDetails)).thenReturn("refresh_token");
         when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
 
-        AuthResponse response = authService.register(request);
+        RegistrationResult result = authService.register(request);
+        AuthResponse response = result.authResponse();
 
         assertThat(response.accessToken()).isEqualTo("access_token");
         assertThat(response.refreshToken()).isEqualTo("refresh_token");
@@ -108,7 +109,7 @@ class AuthServiceTest {
     void shouldReturnAuthResponseWhenLoginWithValidCredentials() {
         LoginRequest request = new LoginRequest("alice@test.com", "Password1");
 
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(Objects.requireNonNull(mockUser)));
         when(userDetailsService.loadUserByUsername("alice@test.com")).thenReturn(mockUserDetails);
         when(jwtService.generateToken(mockUserDetails)).thenReturn("access_token");
         when(jwtService.generateRefreshToken(mockUserDetails)).thenReturn("refresh_token");
@@ -141,7 +142,7 @@ class AuthServiceTest {
         when(userDetailsService.loadUserByUsername("alice@test.com")).thenReturn(mockUserDetails);
         when(jwtService.isTokenValid(refreshToken, mockUserDetails)).thenReturn(true);
         when(jwtService.generateToken(mockUserDetails)).thenReturn("new_access_token");
-        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(Objects.requireNonNull(mockUser)));
         when(userMapper.toResponse(mockUser)).thenReturn(mockUserResponse);
 
         AuthResponse response = authService.refreshToken(refreshToken);

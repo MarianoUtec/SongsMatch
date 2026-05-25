@@ -11,15 +11,16 @@ import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.chat.repository.ConversationRepository;
 import com.musicmatch.chat.repository.MessageRepository;
 import com.musicmatch.user.repository.UserRepository;
-import com.musicmatch.chat.service.IChatService;
 import com.musicmatch.auth.service.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -34,78 +35,82 @@ public class ChatService implements IChatService {
 
     @Override
     @Transactional
-    public ConversationResponse getOrCreateConversation(Long otherUserId) {
+    public ConversationResponse getOrCreateConversation(@NonNull Long otherUserId) {
         User me = securityHelper.getCurrentUser();
+        Long myId = Objects.requireNonNull(me.getId());
         User other = userRepository.findById(otherUserId)
             .orElseThrow(() -> new ResourceNotFoundException("User", otherUserId));
 
-        Conversation conversation = conversationRepository
-            .findBetweenUsers(me.getId(), otherUserId)
+        Conversation conversation = Objects.requireNonNull(conversationRepository
+            .findBetweenUsers(myId, otherUserId)
             .orElseGet(() -> conversationRepository.save(
-                Conversation.builder().userOne(me).userTwo(other).build()
-            ));
+                Objects.requireNonNull(Conversation.builder().userOne(me).userTwo(other).build())
+            )));
 
-        return toResponse(conversation, me.getId());
+        return toResponse(conversation, myId);
     }
 
     @Override
     public List<ConversationResponse> getMyConversations() {
         User me = securityHelper.getCurrentUser();
-        return conversationRepository.findAllByUserId(me.getId())
-            .stream().map(c -> toResponse(c, me.getId())).toList();
+        Long myId = Objects.requireNonNull(me.getId());
+        return conversationRepository.findAllByUserId(myId)
+            .stream().map(c -> toResponse(Objects.requireNonNull(c), myId)).toList();
     }
 
     @Override
     @Transactional
-    public MessageResponse sendMessage(Long conversationId, SendMessageRequest request) {
+    public MessageResponse sendMessage(@NonNull Long conversationId, SendMessageRequest request) {
         User me = securityHelper.getCurrentUser();
+        Long myId = Objects.requireNonNull(me.getId());
         Conversation conversation = conversationRepository.findById(conversationId)
             .orElseThrow(() -> new ResourceNotFoundException("Conversation", conversationId));
 
-        validateUserInConversation(conversation, me.getId());
+        validateUserInConversation(Objects.requireNonNull(conversation), myId);
 
-        Message message = messageRepository.save(
-            Message.builder()
-                .content(request.content())
-                .conversation(conversation)
-                .sender(me)
-                .build()
-        );
+        Message draftMessage = Objects.requireNonNull(Message.builder()
+            .content(request.content())
+            .conversation(conversation)
+            .sender(me)
+            .build());
+        Message message = Objects.requireNonNull(messageRepository.save(draftMessage));
 
-        MessageResponse response = toMessageResponse(message);
-        messagingTemplate.convertAndSend("/topic/conversation." + conversationId, response);
-        messagingTemplate.convertAndSend("/topic/conversations/" + conversationId, response);
+        MessageResponse response = Objects.requireNonNull(toMessageResponse(message));
+        messagingTemplate.convertAndSend("/topic/conversation." + conversationId, Objects.requireNonNull(response));
+        messagingTemplate.convertAndSend("/topic/conversations/" + conversationId, Objects.requireNonNull(response));
 
-        Long recipientId = conversation.getUserOne().getId().equals(me.getId())
+        Long recipientId = conversation.getUserOne().getId().equals(myId)
             ? conversation.getUserTwo().getId()
             : conversation.getUserOne().getId();
-        messagingTemplate.convertAndSendToUser(recipientId.toString(), "/queue/messages", response);
+        String destination = Objects.requireNonNull(recipientId).toString();
+        messagingTemplate.convertAndSendToUser(Objects.requireNonNull(destination), "/queue/messages", Objects.requireNonNull(response));
 
-        log.info("Message sent in conversation {} by user {}", conversationId, me.getId());
+        log.info("Message sent in conversation {} by user {}", conversationId, myId);
         return response;
     }
 
     @Override
     @Transactional
-    public List<MessageResponse> getMessages(Long conversationId) {
+    public List<MessageResponse> getMessages(@NonNull Long conversationId) {
         User me = securityHelper.getCurrentUser();
+        Long myId = Objects.requireNonNull(me.getId());
         Conversation conversation = conversationRepository.findById(conversationId)
             .orElseThrow(() -> new ResourceNotFoundException("Conversation", conversationId));
 
-        validateUserInConversation(conversation, me.getId());
-        messageRepository.markAllAsRead(conversationId, me.getId());
+        validateUserInConversation(Objects.requireNonNull(conversation), myId);
+        messageRepository.markAllAsRead(conversationId, myId);
 
         return messageRepository.findByConversationIdOrderBySentAtAsc(conversationId)
             .stream().map(this::toMessageResponse).toList();
     }
 
-    private void validateUserInConversation(Conversation conversation, Long userId) {
+    private void validateUserInConversation(@NonNull Conversation conversation, @NonNull Long userId) {
         boolean belongs = conversation.getUserOne().getId().equals(userId)
             || conversation.getUserTwo().getId().equals(userId);
         if (!belongs) throw new ForbiddenException("You are not part of this conversation");
     }
 
-    private ConversationResponse toResponse(Conversation c, Long myId) {
+    private ConversationResponse toResponse(@NonNull Conversation c, @NonNull Long myId) {
         User other = c.getUserOne().getId().equals(myId) ? c.getUserTwo() : c.getUserOne();
         List<MessageResponse> messages = messageRepository
             .findByConversationIdOrderBySentAtAsc(c.getId())
@@ -117,7 +122,7 @@ public class ChatService implements IChatService {
         );
     }
 
-    private MessageResponse toMessageResponse(Message m) {
+    private MessageResponse toMessageResponse(@NonNull Message m) {
         return new MessageResponse(
             m.getId(), m.getConversation().getId(),
             m.getSender().getId(), m.getSender().getName(),

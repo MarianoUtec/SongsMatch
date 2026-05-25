@@ -5,6 +5,7 @@ import com.musicmatch.song.service.ISongService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +23,7 @@ public class SongController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SongResponse> getSong(@PathVariable Long id) {
+    public ResponseEntity<SongResponse> getSong(@PathVariable @NonNull Long id) {
         return ResponseEntity.ok(songService.getSongById(id));
     }
 
@@ -38,7 +39,7 @@ public class SongController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteSong(@PathVariable @NonNull Long id) {
         songService.deleteSong(id);
         return ResponseEntity.noContent().build();
     }

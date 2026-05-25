@@ -4,20 +4,19 @@ import com.musicmatch.recommendation.dto.response.FeedItemResponse;
 import com.musicmatch.recommendation.domain.LatentProfile;
 import com.musicmatch.recommendation.domain.Rating;
 import com.musicmatch.auth.domain.User;
-import com.musicmatch.exceptions.ResourceNotFoundException;
 import com.musicmatch.auth.service.SecurityHelper;
 import com.musicmatch.song.mapper.SongMapper;
 import com.musicmatch.recommendation.repository.LatentProfileRepository;
 import com.musicmatch.recommendation.repository.RatingRepository;
 import com.musicmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +55,7 @@ public class FeedService implements com.musicmatch.recommendation.service.IFeedS
             .sorted(Comparator.comparingDouble(
                 (LatentProfile p) -> p.getCompatibilityScore()).reversed())
             .limit(MAX_NEARBY_USERS)
-            .map(p -> p.getUser().getId())
+            .map(p -> Objects.requireNonNull(p.getUser().getId()))
             .toList();
 
         if (nearbyUserIds.isEmpty()) return List.of();
@@ -64,17 +63,18 @@ public class FeedService implements com.musicmatch.recommendation.service.IFeedS
         // Get recent ratings from nearby users
         List<FeedItemResponse> feed = new ArrayList<>();
         for (Long nearbyUserId : nearbyUserIds) {
+            Long candidateUserId = Objects.requireNonNull(nearbyUserId);
             LatentProfile nearbyProfile = others.stream()
-                .filter(p -> p.getUser().getId().equals(nearbyUserId))
+                .filter(p -> p.getUser().getId().equals(candidateUserId))
                 .findFirst().orElse(null);
             if (nearbyProfile == null) continue;
 
-            String nearbyUserName = userRepository.findById(nearbyUserId)
+            String nearbyUserName = userRepository.findById(candidateUserId)
                 .map(User::getName).orElse("Unknown");
             double compatibility = nearbyProfile.getCompatibilityScore() != null
                 ? nearbyProfile.getCompatibilityScore() : 0.0;
 
-            List<Rating> recentRatings = ratingRepository.findByUserId(nearbyUserId)
+            List<Rating> recentRatings = ratingRepository.findByUserId(candidateUserId)
                 .stream()
                 .sorted(Comparator.comparing(Rating::getCreatedAt).reversed())
                 .limit(3)
@@ -82,10 +82,10 @@ public class FeedService implements com.musicmatch.recommendation.service.IFeedS
 
             for (Rating rating : recentRatings) {
                 feed.add(new FeedItemResponse(
-                    nearbyUserId,
+                    candidateUserId,
                     nearbyUserName,
                     compatibility,
-                    songMapper.toResponse(rating.getSong()),
+                    songMapper.toResponse(Objects.requireNonNull(rating.getSong())),
                     rating.getScore(),
                     rating.getCreatedAt()
                 ));

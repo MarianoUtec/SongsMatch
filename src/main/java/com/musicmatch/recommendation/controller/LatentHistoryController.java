@@ -3,7 +3,6 @@ package com.musicmatch.recommendation.controller;
 import com.musicmatch.recommendation.service.ILatentHistoryService;
 
 import com.musicmatch.recommendation.dto.response.LatentProfileHistoryResponse;
-import com.musicmatch.recommendation.service.LatentHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

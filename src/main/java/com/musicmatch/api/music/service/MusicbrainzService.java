@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.*;
 
@@ -58,14 +59,21 @@ public class MusicbrainzService {
         headers.set("User-Agent", "MusicMatch/1.0 (contact@musicmatch.com)");
         headers.set("Accept", "application/json");
 
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+        java.net.URI uri = Objects.requireNonNull(java.net.URI.create(url));
+        RequestEntity<Void> request = RequestEntity.get(uri)
+            .headers(headers)
+            .build();
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            request,
+            new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
 
-        if (response.getBody() == null) {
+        Map<String, Object> body = response.getBody();
+        if (body == null) {
             return Collections.emptyList();
         }
 
-        List<Map<String, Object>> recordings = (List<Map<String, Object>>) response.getBody().get("recordings");
+        List<Map<String, Object>> recordings = (List<Map<String, Object>>) body.get("recordings");
         if (recordings == null || recordings.isEmpty()) {
             return Collections.emptyList();
         }

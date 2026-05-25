@@ -1,6 +1,7 @@
 package com.musicmatch.auth.controller;
 
 import com.musicmatch.auth.service.IAuthService;
+import com.musicmatch.auth.service.RegistrationResult;
 
 import io.swagger.v3.oas.annotations.Operation;
 import com.musicmatch.auth.dto.request.LoginRequest;
@@ -22,7 +23,12 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(security = {})
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+        RegistrationResult result = authService.register(request);
+        if (result.emailSent()) {
+            return ResponseEntity.ok(result.authResponse());
+        } else {
+            return ResponseEntity.status(HttpStatus.CREATED).body(result.authResponse());
+        }
     }
 
     @PostMapping("/login")

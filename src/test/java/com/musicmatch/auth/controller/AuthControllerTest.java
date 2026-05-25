@@ -12,6 +12,7 @@ import com.musicmatch.config.SecurityConfig;
 import com.musicmatch.config.jwt.JwtAuthenticationFilter;
 import com.musicmatch.config.jwt.JwtService;
 import com.musicmatch.auth.service.AuthService;
+import com.musicmatch.auth.service.RegistrationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,15 +53,15 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("shouldReturn201WhenRegisterWithValidData")
+    @DisplayName("shouldReturn200WhenRegisterWithValidDataAndEmailSent")
     void shouldReturn201WhenRegisterWithValidData() throws Exception {
         RegisterRequest request = new RegisterRequest("Alice", "alice@test.com", "Password1");
-        when(authService.register(any(RegisterRequest.class))).thenReturn(mockAuthResponse);
+        when(authService.register(any(RegisterRequest.class))).thenReturn(new RegistrationResult(mockAuthResponse, true));
 
         mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
+            .andExpect(status().isOk())
             .andExpect(jsonPath("$.accessToken").value("access_token"))
             .andExpect(jsonPath("$.tokenType").value("Bearer"))
             .andExpect(jsonPath("$.user.email").value("alice@test.com"));

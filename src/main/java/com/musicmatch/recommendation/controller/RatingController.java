@@ -1,10 +1,8 @@
 package com.musicmatch.recommendation.controller;
 
 import com.musicmatch.recommendation.service.IRatingService;
-
 import com.musicmatch.recommendation.dto.request.RatingRequest;
 import com.musicmatch.recommendation.dto.response.RatingResponse;
-import com.musicmatch.recommendation.service.RatingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

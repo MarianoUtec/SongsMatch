@@ -1,9 +1,7 @@
 package com.musicmatch.recommendation.controller;
 
 import com.musicmatch.recommendation.service.IFeedService;
-
 import com.musicmatch.recommendation.dto.response.FeedItemResponse;
-import com.musicmatch.recommendation.service.FeedService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

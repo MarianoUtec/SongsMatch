@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class UserService implements com.musicmatch.user.service.IUserService {
         return userMapper.toResponse(getCurrentUser());
     }
 
+    @SuppressWarnings("null")
     @Transactional
     public UserResponse updateMyProfile(UpdateUserRequest request) {
         User user = getCurrentUser();
@@ -42,12 +44,16 @@ public class UserService implements com.musicmatch.user.service.IUserService {
         return userMapper.toResponse(user);
     }
 
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(userMapper::toResponse);
+    public Page<UserResponse> getAllUsers(@Nullable Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : Pageable.unpaged();
+        return userRepository.findAll(effectivePageable).map(userMapper::toResponse);
     }
 
     @Transactional
-    public void deactivateUser(Long userId) {
+    public void deactivateUser(@Nullable Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
+        }
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         user.setIsActive(false);

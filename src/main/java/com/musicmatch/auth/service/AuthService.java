@@ -3,9 +3,9 @@ package com.musicmatch.auth.service;
 import com.musicmatch.auth.dto.request.LoginRequest;
 import com.musicmatch.auth.dto.request.RegisterRequest;
 import com.musicmatch.auth.dto.response.AuthResponse;
-import com.musicmatch.user.dto.response.UserResponse;
 import com.musicmatch.auth.domain.User;
 import com.musicmatch.events.UserRegisteredEvent;
+import com.musicmatch.recommendation.service.async.EmailService;
 import com.musicmatch.exceptions.DuplicateResourceException;
 import com.musicmatch.exceptions.UnauthorizedException;
 import com.musicmatch.user.mapper.UserMapper;
@@ -23,6 +23,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -35,28 +37,33 @@ public class AuthService implements com.musicmatch.auth.service.IAuthService {
     private final UserDetailsService userDetailsService;
     private final UserMapper userMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final EmailService emailService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public RegistrationResult register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new DuplicateResourceException("Email already registered: " + request.email());
         }
 
-        User user = User.builder()
+        User user = Objects.requireNonNull(User.builder()
             .name(request.name())
             .email(request.email())
             .password(passwordEncoder.encode(request.password()))
-            .build();
+            .build());
 
         user = userRepository.save(user);
-        eventPublisher.publishEvent(new UserRegisteredEvent(this, user));
+        // Try sending welcome email synchronously. If it fails, publish event to retry async.
+        boolean emailSent = emailService.sendWelcomeEmailSync(user);
+        if (!emailSent) {
+            eventPublisher.publishEvent(new UserRegisteredEvent(this, user));
+        }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
         log.info("User registered: {}", user.getEmail());
-        return AuthResponse.of(accessToken, refreshToken, userMapper.toResponse(user));
+        return new RegistrationResult(AuthResponse.of(accessToken, refreshToken, userMapper.toResponse(user)), emailSent);
     }
 
     public AuthResponse login(LoginRequest request) {

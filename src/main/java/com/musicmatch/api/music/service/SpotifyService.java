@@ -3,7 +3,6 @@ package com.musicmatch.api.music.service;
 import com.musicmatch.song.domain.Song;
 import com.musicmatch.exceptions.SpotifyApiException;
 import com.musicmatch.song.repository.SongRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -11,9 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -48,22 +50,29 @@ public class SpotifyService {
      * Returns a list of songs (existing + newly created).
      */
     public List<Song> searchAndSave(String query, int limit) {
-        String token = getAccessToken();
+        String token = Objects.requireNonNull(getAccessToken());
         String url = apiUrl + "/search?q=" + encodeQuery(query) + "&type=track&limit=" + limit;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        headers.setBearerAuth(Objects.requireNonNull(token));
+        URI requestUri = Objects.requireNonNull(URI.create(url));
+        RequestEntity<Void> request = RequestEntity.get(requestUri)
+            .headers(headers)
+            .build();
 
         try {
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
-            if (response.getBody() == null) {
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                request,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null) {
                 throw new SpotifyApiException("Empty response from Spotify API");
             }
 
             List<Song> results = new ArrayList<>();
-            Map<String, Object> tracks = (Map<String, Object>) response.getBody().get("tracks");
-            List<Map<String, Object>> items = (List<Map<String, Object>>) tracks.get("items");
+            Map<String, Object> tracks = requireMap(responseBody.get("tracks"), "tracks");
+            List<Map<String, Object>> items = requireMapList(tracks.get("items"), "items");
 
             for (Map<String, Object> item : items) {
                 String spotifyId = (String) item.get("id");
@@ -105,16 +114,23 @@ public class SpotifyService {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "client_credentials");
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
-            if (response.getBody() == null) {
+            RequestEntity<MultiValueMap<String, String>> tokenRequest = RequestEntity
+                .post(Objects.requireNonNull(URI.create(tokenUrl)))
+                .headers(headers)
+                .body(body);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                tokenRequest,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null) {
                 throw new SpotifyApiException("Failed to obtain Spotify token");
             }
 
-            cachedToken = (String) response.getBody().get("access_token");
-            int expiresIn = (Integer) response.getBody().get("expires_in");
+            cachedToken = Objects.toString(responseBody.get("access_token"), null);
+            Integer expiresInValue = requireInteger(responseBody.get("expires_in"), "expires_in");
+            int expiresIn = expiresInValue;
             tokenExpiresAt = Instant.now().plusSeconds(expiresIn - 60); // 1 min buffer
 
             log.info("Spotify access token refreshed, expires in {}s", expiresIn);
@@ -127,19 +143,18 @@ public class SpotifyService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Song buildSongFromItem(Map<String, Object> item, String spotifyId) {
         String title = (String) item.get("name");
 
-        List<Map<String, Object>> artists = (List<Map<String, Object>>) item.get("artists");
+        List<Map<String, Object>> artists = requireMapList(item.get("artists"), "artists");
         String artist = artists.isEmpty() ? "Unknown" : (String) artists.get(0).get("name");
 
-        Map<String, Object> album = (Map<String, Object>) item.get("album");
+        Map<String, Object> album = requireMap(item.get("album"), "album");
         String albumName = album != null ? (String) album.get("name") : null;
 
         String coverUrl = null;
         if (album != null) {
-            List<Map<String, Object>> images = (List<Map<String, Object>>) album.get("images");
+            List<Map<String, Object>> images = requireMapList(album.get("images"), "images");
             if (images != null && !images.isEmpty()) {
                 coverUrl = (String) images.get(0).get("url");
             }
@@ -165,5 +180,28 @@ public class SpotifyService {
         } catch (Exception e) {
             return query;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> requireMap(Object value, String fieldName) {
+        if (value == null) {
+            throw new SpotifyApiException("Missing " + fieldName + " in Spotify response");
+        }
+        return (Map<String, Object>) value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> requireMapList(Object value, String fieldName) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+        return (List<Map<String, Object>>) value;
+    }
+
+    private Integer requireInteger(Object value, String fieldName) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        throw new SpotifyApiException("Missing or invalid " + fieldName + " in Spotify response");
     }
 }

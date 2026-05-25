@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
@@ -22,7 +23,7 @@ public class ChatWebSocketController {
     // Client sends to: /app/chat/{conversationId}
     @MessageMapping("/chat/{conversationId}")
     public void handleWebSocketMessage(
-            @DestinationVariable Long conversationId,
+            @DestinationVariable @NonNull Long conversationId,
             @Payload SendMessageRequest request,
             Principal principal) {
         if (principal == null) {

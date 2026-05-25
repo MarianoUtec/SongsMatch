@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -26,7 +27,7 @@ public class GlobalExceptionHandler {
         String path
     ) {}
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest req) {
+    private ResponseEntity<ErrorResponse> build(@NonNull HttpStatus status, String message, HttpServletRequest req) {
         return ResponseEntity.status(status).body(new ErrorResponse(
             LocalDateTime.now(), status.value(), status.getReasonPhrase(), message, req.getRequestURI()
         ));
