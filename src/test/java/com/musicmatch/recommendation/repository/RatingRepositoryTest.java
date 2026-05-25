@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("RatingRepository Tests")
+@SuppressWarnings("null")
 class RatingRepositoryTest {
 
     @Autowired private RatingRepository ratingRepository;

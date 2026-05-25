@@ -35,6 +35,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatService Tests")
+@SuppressWarnings("null")
 class ChatServiceTest {
 
     @Mock private ConversationRepository conversationRepository;

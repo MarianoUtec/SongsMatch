@@ -2,7 +2,6 @@ package com.musicmatch.user.repository;
 
 import com.musicmatch.auth.domain.Role;
 import com.musicmatch.auth.domain.User;
-import com.musicmatch.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("UserRepository Integration Tests (PostgreSQL)")
+@SuppressWarnings({"null", "resource"})
 class UserRepositoryIntegrationTest {
 
     @Container

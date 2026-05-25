@@ -33,6 +33,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService Tests")
+@SuppressWarnings("null")
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;

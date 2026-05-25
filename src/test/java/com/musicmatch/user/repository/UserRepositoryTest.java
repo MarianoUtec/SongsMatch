@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("UserRepository Tests")
+@SuppressWarnings("null")
 class UserRepositoryTest {
 
     @Autowired
@@ -94,7 +95,7 @@ class UserRepositoryTest {
     @Test
     @DisplayName("shouldExcludeTargetUserWhenFindAllActiveExcept")
     void shouldExcludeTargetUserWhenFindAllActiveExcept() {
-        User carol = userRepository.save(User.builder()
+        userRepository.save(User.builder()
             .name("Carol").email("carol@test.com")
             .password("pw").isActive(true).role(Role.USER).build());
 
