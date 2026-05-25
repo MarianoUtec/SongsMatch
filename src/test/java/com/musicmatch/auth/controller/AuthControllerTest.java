@@ -57,7 +57,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest("Alice", "alice@test.com", "Password1");
         when(authService.register(any(RegisterRequest.class))).thenReturn(mockAuthResponse);
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -71,7 +71,7 @@ class AuthControllerTest {
     void shouldReturn400WhenRegisterWithInvalidEmail() throws Exception {
         RegisterRequest request = new RegisterRequest("Alice", "not-an-email", "Password1");
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -82,7 +82,7 @@ class AuthControllerTest {
     void shouldReturn400WhenRegisterWithShortPassword() throws Exception {
         RegisterRequest request = new RegisterRequest("Alice", "alice@test.com", "abc");
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -94,7 +94,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest("Alice", "alice@test.com", "Password1");
         when(authService.register(any())).thenThrow(new DuplicateResourceException("Email already registered"));
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict());
@@ -106,7 +106,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest("alice@test.com", "Password1");
         when(authService.login(any(LoginRequest.class))).thenReturn(mockAuthResponse);
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -120,7 +120,7 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest("alice@test.com", "wrong");
         when(authService.login(any())).thenThrow(new UnauthorizedException("Invalid credentials"));
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnauthorized());
@@ -131,7 +131,7 @@ class AuthControllerTest {
     void shouldReturn200WhenRefreshTokenIsValid() throws Exception {
         when(authService.refreshToken("valid_token")).thenReturn(mockAuthResponse);
 
-        mockMvc.perform(post("/api/v1/auth/refresh")
+        mockMvc.perform(post("/api/auth/refresh")
                 .param("refreshToken", "valid_token"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.accessToken").value("access_token"));
