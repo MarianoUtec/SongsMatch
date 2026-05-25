@@ -2,6 +2,8 @@ name: Backend CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
@@ -19,13 +21,9 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Grant execute permission
-        run: chmod +x mvnw
-
-      - name: Run Maven tests (allow failures)
+      - name: Run Maven tests
         id: run_tests
-        run: |
-          ./mvnw -B -V -DskipTests=false test
+        run: mvn -B -V test
         continue-on-error: true
 
       - name: Upload surefire reports artifact
@@ -36,7 +34,7 @@ jobs:
           path: target/surefire-reports/
 
       - name: Fail job if tests failed
-        if: ${{ steps.run_tests.outcome == 'failure' }}
+        if: steps.run_tests.outcome == 'failure'
         run: |
-          echo "Some tests failed. See annotations and surefire-reports artifact for details."
+          echo "Some tests failed. Check surefire-reports artifact."
           exit 1
