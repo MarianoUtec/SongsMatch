@@ -25,7 +25,7 @@ public class OpenApiConfig {
                     and generate personalized song recommendations.
                     
                     ## Authentication
-                    Most endpoints require a valid JWT Bearer token. Use `/api/auth/login`
+                    Most endpoints require a valid JWT Bearer token. Use `/api/v1/auth/login`
                     to obtain a token, then click **Authorize** and paste it below.
                     """)
                 .version("v1.0.0")
